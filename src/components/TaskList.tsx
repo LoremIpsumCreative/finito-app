@@ -125,11 +125,12 @@ type TaskListProps = {
   selectedTaskId: string | null
   onOpenTask: (taskId: string) => void
   renderTask: (task: Task) => ReactNode
-  groupBy: 'status' | 'priority' | 'scope'
-  setGroupBy: (value: 'status' | 'priority' | 'scope') => void
+  groupBy: 'status' | 'priority' | 'scope' | 'section'
+  setGroupBy: (value: 'status' | 'priority' | 'scope' | 'section') => void
 }
 
-const groupByOptions: { value: 'status' | 'priority' | 'scope'; label: string }[] = [
+const groupByOptions: { value: 'status' | 'priority' | 'scope' | 'section'; label: string }[] = [
+  { value: 'section', label: 'Section' },
   { value: 'status', label: 'Status' },
   { value: 'priority', label: 'Priority' },
   { value: 'scope', label: 'Scope' },
@@ -816,7 +817,7 @@ export function TaskList({
                               onChange={(event) => updateTaskSection(task.id, event.target.value)}
                               className="h-8 max-w-[140px] cursor-pointer rounded-full border border-[var(--outline)] bg-[var(--surface-muted)] px-2.5 text-center text-[13px] font-semibold text-[var(--text-secondary)] outline-none"
                             >
-                              {sections.length === 0 && <option value="">No section</option>}
+                              <option value="">No section</option>
                               {sections.map((sectionOption) => (
                                 <option key={sectionOption.id} value={sectionOption.id}>
                                   {sectionOption.name}

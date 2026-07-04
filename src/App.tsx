@@ -81,7 +81,7 @@ function App() {
   const [priorityFilter, setPriorityFilter] = useState('all')
   const [sectionFilter, setSectionFilter] = useState('all')
   const [visibilityFilter, setVisibilityFilter] = useState<'active' | 'archived' | 'all'>('active')
-  const [groupBy, setGroupBy] = useState<'status' | 'priority' | 'scope'>('status')
+  const [groupBy, setGroupBy] = useState<'status' | 'priority' | 'scope' | 'section'>('section')
   const [viewMode, setViewMode] = useState<'card' | 'table' | 'kanban' | 'timeline' | 'calendar'>('table')
   const [isCreateTaskFormOpen, setIsCreateTaskFormOpen] = useState(false)
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null)
@@ -149,6 +149,18 @@ function App() {
       .filter((task) => !task.parent_task_id)
       .sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
 
+    if (groupBy === 'section') {
+      const noSection = parentTasks.filter((task) => !task.section_id)
+      return [
+        ...sections.map((section) => ({
+          id: section.id,
+          name: section.name,
+          tasks: parentTasks.filter((task) => task.section_id === section.id),
+        })),
+        ...(noSection.length > 0 ? [{ id: 'no_section', name: 'No section', tasks: noSection }] : []),
+      ]
+    }
+
     if (groupBy === 'status') {
       return statusOptions.map((status) => ({
         id: status.value,
@@ -184,7 +196,7 @@ function App() {
         tasks: parentTasks.filter((task) => !task.difficulty),
       },
     ]
-  }, [filteredTasks, groupBy])
+  }, [filteredTasks, groupBy, sections])
 
   const stats = useMemo(() => {
     const blockedTaskIds = new Set(dependencies.map((dependency) => dependency.task_id))
@@ -574,7 +586,9 @@ function App() {
   }
 
   function moveTaskToGroup(taskId: string, groupId: string) {
-    if (groupBy === 'status') {
+    if (groupBy === 'section') {
+      updateTaskSection(taskId, groupId === 'no_section' ? '' : groupId)
+    } else if (groupBy === 'status') {
       updateTaskStatus(taskId, groupId)
     } else if (groupBy === 'priority') {
       updateTaskPriority(taskId, groupId === 'no_priority' ? '' : groupId)
@@ -593,7 +607,12 @@ function App() {
 
     const newTask = {
       project_id: projectId,
-      section_id: fallbackSectionId || null,
+      section_id:
+        groupBy === 'section'
+          ? groupId === 'no_section'
+            ? null
+            : groupId
+          : fallbackSectionId || null,
       parent_task_id: null,
       title: trimmed,
       description: null,
@@ -618,10 +637,11 @@ function App() {
   }
 
   async function updateTaskSection(taskId: string, sectionId: string) {
+    const nextSectionId = sectionId || null
     setUpdatingSectionTaskId(taskId)
     setErrorMessage(null)
 
-    const { error } = await supabase.from('tasks').update({ section_id: sectionId }).eq('id', taskId)
+    const { error } = await supabase.from('tasks').update({ section_id: nextSectionId }).eq('id', taskId)
 
     if (error) {
       setErrorMessage(error.message)
@@ -630,7 +650,7 @@ function App() {
     }
 
     setTasks((currentTasks) =>
-      currentTasks.map((task) => (task.id === taskId ? { ...task, section_id: sectionId } : task)),
+      currentTasks.map((task) => (task.id === taskId ? { ...task, section_id: nextSectionId } : task)),
     )
     setUpdatingSectionTaskId(null)
   }
@@ -1305,6 +1325,7 @@ function App() {
               onChange={(event) => updateTaskSection(task.id, event.target.value)}
               className={`${pillSelectClass} ${pillToneNeutral}`}
             >
+              <option value="">No section</option>
               {sections.map((section) => (
                 <option key={section.id} value={section.id}>{section.name}</option>
               ))}
