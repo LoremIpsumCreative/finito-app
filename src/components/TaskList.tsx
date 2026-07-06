@@ -120,6 +120,11 @@ type TaskListProps = {
   updateTaskSection: (taskId: string, sectionId: string) => void
   moveTaskToGroup: (taskId: string, groupId: string) => void
   addTaskToGroup: (groupId: string, title: string) => void
+  createSection: (name: string) => void
+  renameSection: (sectionId: string, name: string) => void
+  deleteSection: (sectionId: string) => void
+  moveSection: (sectionId: string, direction: -1 | 1) => void
+  reorderTask: (taskId: string, beforeTaskId: string | null, groupId: string) => void
   getTaskComments: (taskId: string) => unknown[]
   getSubtasks: (taskId: string) => Task[]
   selectedTaskId: string | null
@@ -239,6 +244,11 @@ export function TaskList({
   updateTaskSection,
   moveTaskToGroup,
   addTaskToGroup,
+  createSection,
+  renameSection,
+  deleteSection,
+  moveSection,
+  reorderTask,
   getTaskComments,
   getSubtasks,
   selectedTaskId,
@@ -249,6 +259,20 @@ export function TaskList({
 }: TaskListProps) {
   const [dragTaskId, setDragTaskId] = useState<string | null>(null)
   const [dragOverGroup, setDragOverGroup] = useState<string | null>(null)
+  // List-view row drag (reorder within / move between sections).
+  const [rowDragId, setRowDragId] = useState<string | null>(null)
+  const [rowDropTarget, setRowDropTarget] = useState<{ group: string; before: string | null } | null>(null)
+  // Section chrome: collapse (persisted), inline rename, add, delete confirm.
+  const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>(() => {
+    try {
+      return JSON.parse(localStorage.getItem('finito-collapsed-groups') ?? '{}') as Record<string, boolean>
+    } catch {
+      return {}
+    }
+  })
+  const [renamingSectionId, setRenamingSectionId] = useState<string | null>(null)
+  const [addingSection, setAddingSection] = useState(false)
+  const [confirmDeleteSectionId, setConfirmDeleteSectionId] = useState<string | null>(null)
   const [openHeaderMenu, setOpenHeaderMenu] = useState<string | null>(null)
   const [columnsMenuOpen, setColumnsMenuOpen] = useState(false)
   const [hiddenColumns, setHiddenColumns] = useState<Record<string, boolean>>(() => {
@@ -557,12 +581,103 @@ export function TaskList({
     )
   }
 
+  // Group header shared by the list & card views: collapse chevron + name +
+  // count, and (for real sections when grouped by section) hover controls to
+  // rename, reorder, and delete the section — Asana-style section management.
+  function renderGroupHeader(group: TaskGroup, subtle: boolean) {
+    const isRealSection = groupBy === 'section' && group.id !== 'no_section'
+    const sectionIndex = isRealSection ? sections.findIndex((s) => s.id === group.id) : -1
+    const isCollapsed = !!collapsedGroups[group.id]
+    const isRenaming = renamingSectionId === group.id
+    const isConfirmingDelete = confirmDeleteSectionId === group.id
+
+    function commitRename(value: string) {
+      setRenamingSectionId(null)
+      if (value.trim() && value.trim() !== group.name) {
+        renameSection(group.id, value)
+      }
+    }
+
+    const controlClass =
+      'flex h-6 w-6 items-center justify-center rounded text-[var(--text-muted)] transition hover:bg-[var(--surface-muted)] hover:text-[var(--text-primary)] disabled:opacity-30'
+
+    return (
+      <div className={`group/sec flex items-center gap-2 px-4 py-2 ${subtle ? 'bg-[var(--surface-subtle)]' : 'bg-[var(--surface-muted)]'}`}>
+        <button
+          type="button"
+          onClick={() => setCollapsedGroups((current) => ({ ...current, [group.id]: !current[group.id] }))}
+          aria-label={isCollapsed ? 'Expand section' : 'Collapse section'}
+          className="flex h-5 w-5 shrink-0 items-center justify-center rounded text-[var(--text-muted)] transition hover:bg-[var(--surface-muted)] hover:text-[var(--text-primary)]"
+        >
+          <Icon name="chevron" className={`h-3.5 w-3.5 transition-transform ${isCollapsed ? '-rotate-90' : ''}`} />
+        </button>
+
+        {isRenaming ? (
+          <input
+            autoFocus
+            defaultValue={group.name}
+            onBlur={(event) => commitRename(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter') commitRename(event.currentTarget.value)
+              if (event.key === 'Escape') setRenamingSectionId(null)
+            }}
+            className="min-w-0 flex-1 bg-transparent text-[13px] font-bold uppercase tracking-[0.16em] text-[var(--text-primary)] outline-none"
+            aria-label="Section name"
+          />
+        ) : (
+          <h3 className="min-w-0 truncate text-[13px] font-bold uppercase tracking-[0.16em] text-[var(--text-secondary)]">
+            {group.name}
+          </h3>
+        )}
+
+        {isRealSection && !isRenaming && (
+          <div className="hidden shrink-0 items-center gap-0.5 group-hover/sec:flex">
+            <button type="button" onClick={() => moveSection(group.id, -1)} disabled={sectionIndex <= 0} aria-label="Move section up" className={controlClass}>
+              ↑
+            </button>
+            <button type="button" onClick={() => moveSection(group.id, 1)} disabled={sectionIndex === sections.length - 1} aria-label="Move section down" className={controlClass}>
+              ↓
+            </button>
+            <button type="button" onClick={() => setRenamingSectionId(group.id)} aria-label="Rename section" className={controlClass}>
+              ✎
+            </button>
+            {isConfirmingDelete ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setConfirmDeleteSectionId(null)
+                  deleteSection(group.id)
+                }}
+                onBlur={() => setConfirmDeleteSectionId(null)}
+                className="rounded px-1.5 text-[13px] font-semibold text-[var(--error-dark)] transition hover:bg-[var(--error-light)]"
+              >
+                Delete?
+              </button>
+            ) : (
+              <button type="button" onClick={() => setConfirmDeleteSectionId(group.id)} aria-label="Delete section" className={controlClass}>
+                <Icon name="x" className="h-3.5 w-3.5" />
+              </button>
+            )}
+          </div>
+        )}
+
+        <span className="ml-auto shrink-0 text-[13px] font-medium text-[var(--text-muted)]">
+          {group.tasks.length} tasks
+        </span>
+      </div>
+    )
+  }
+
   const isTable = viewMode === 'table'
   const displayedCount = isTable ? tableVisibleCount : filteredTaskCount
 
   useEffect(() => {
     localStorage.setItem('finito-hidden-columns', JSON.stringify(hiddenColumns))
   }, [hiddenColumns])
+
+  useEffect(() => {
+    localStorage.setItem('finito-collapsed-groups', JSON.stringify(collapsedGroups))
+  }, [collapsedGroups])
 
   const isColumnVisible = (id: string) => id === 'task' || !hiddenColumns[id]
   const visibleColumns = columns.filter((column) => isColumnVisible(column.id))
@@ -682,15 +797,9 @@ export function TaskList({
         <>
           {groupedTasks.filter((group) => group.tasks.length > 0).map((group) => (
             <section key={group.id} className="overflow-hidden rounded-xl border border-[var(--outline-soft)] bg-[var(--background-paper)] shadow-sm">
-              <div className="flex items-center justify-between bg-[var(--surface-muted)] px-4 py-2">
-                <h3 className="text-[13px] font-bold uppercase tracking-[0.16em] text-[var(--text-secondary)]">
-                  {group.name}
-                </h3>
-                <span className="text-[13px] font-medium text-[var(--text-muted)]">
-                  {group.tasks.length} tasks
-                </span>
-              </div>
+              {renderGroupHeader(group, false)}
 
+              {!collapsedGroups[group.id] && (
               <div className="divide-y divide-[var(--outline-soft)]">
                 {group.tasks.map((task) => (
                   <div
@@ -702,6 +811,7 @@ export function TaskList({
                   </div>
                 ))}
               </div>
+              )}
             </section>
           ))}
           {groupedTasks.every((group) => group.tasks.length === 0) && (
@@ -714,14 +824,8 @@ export function TaskList({
         <>
           {tableGroups.map((group) => (
             <section key={group.id} className="overflow-hidden rounded-xl border border-[var(--outline-soft)] bg-[var(--background-paper)] shadow-sm">
-              <div className="flex items-center justify-between bg-[var(--surface-subtle)] px-4 py-2">
-                <h3 className="text-[13px] font-bold uppercase tracking-[0.16em] text-[var(--text-secondary)]">
-                  {group.name}
-                </h3>
-                <span className="text-[13px] font-medium text-[var(--text-muted)]">
-                  {group.tasks.length} tasks
-                </span>
-              </div>
+              {renderGroupHeader(group, true)}
+              {!collapsedGroups[group.id] && (
               <div className="overflow-x-auto">
                 <div style={{ minWidth: `${tableMinWidth}px` }}>
                   <div className="grid border-b border-[var(--outline-soft)] bg-[var(--surface-muted)] px-4 py-1.5 [&>div]:flex [&>div]:items-center [&>div]:border-r [&>div]:border-[var(--outline-soft)] [&>div]:px-2 [&>div:first-child]:pl-0 [&>div:last-child]:border-r-0" style={{ gridTemplateColumns }}>
@@ -738,10 +842,35 @@ export function TaskList({
                         <div
                           key={task.id}
                           onClick={() => onOpenTask(task.id)}
-                          style={{ gridTemplateColumns }}
+                          draggable={groupBy === 'section'}
+                          onDragStart={(event) => {
+                            setRowDragId(task.id)
+                            event.dataTransfer.effectAllowed = 'move'
+                          }}
+                          onDragEnd={() => {
+                            setRowDragId(null)
+                            setRowDropTarget(null)
+                          }}
+                          onDragOver={(event) => {
+                            if (!rowDragId || rowDragId === task.id) return
+                            event.preventDefault()
+                            setRowDropTarget({ group: group.id, before: task.id })
+                          }}
+                          onDrop={(event) => {
+                            event.preventDefault()
+                            if (rowDragId && rowDragId !== task.id) reorderTask(rowDragId, task.id, group.id)
+                            setRowDragId(null)
+                            setRowDropTarget(null)
+                          }}
+                          style={{
+                            gridTemplateColumns,
+                            ...(rowDropTarget?.group === group.id && rowDropTarget.before === task.id
+                              ? { boxShadow: 'inset 0 2px 0 0 var(--primary-main)' }
+                              : {}),
+                          }}
                           className={`grid cursor-pointer items-stretch gap-0 px-4 text-[13px] transition hover:bg-[var(--surface-muted)] [&>div]:flex [&>div]:min-h-[38px] [&>div]:items-center [&>div]:border-r [&>div]:border-[var(--outline-soft)] [&>div]:px-2 [&>div:first-child]:pl-0 [&>div:last-child]:border-r-0 ${
                             selectedTaskId === task.id ? 'bg-[var(--surface-subtle)]' : ''
-                          } ${task.status === 'done' ? 'opacity-55' : ''}`}
+                          } ${task.status === 'done' ? 'opacity-55' : ''} ${rowDragId === task.id ? 'opacity-40' : ''}`}
                         >
                           <div className="min-w-0 gap-2 text-left">
                             <StatusToggle
@@ -847,12 +976,68 @@ export function TaskList({
                         </div>
                       )
                     })}
-                    <AddTaskRow groupId={group.id} onAdd={addTaskToGroup} />
+                    <div
+                      onDragOver={(event) => {
+                        if (!rowDragId) return
+                        event.preventDefault()
+                        setRowDropTarget({ group: group.id, before: null })
+                      }}
+                      onDrop={(event) => {
+                        event.preventDefault()
+                        if (rowDragId) reorderTask(rowDragId, null, group.id)
+                        setRowDragId(null)
+                        setRowDropTarget(null)
+                      }}
+                      style={
+                        rowDropTarget?.group === group.id && rowDropTarget.before === null
+                          ? { boxShadow: 'inset 0 2px 0 0 var(--primary-main)' }
+                          : undefined
+                      }
+                    >
+                      <AddTaskRow groupId={group.id} onAdd={addTaskToGroup} />
+                    </div>
                   </div>
                 </div>
               </div>
+              )}
             </section>
           ))}
+
+          {groupBy === 'section' && (
+            <div className="rounded-xl border border-dashed border-[var(--outline)] bg-transparent px-4 py-2 text-[13px]">
+              {addingSection ? (
+                <div className="flex items-center gap-2">
+                  <StatusGlyph markup={ICON_DASHED_PLUS} className="h-5 w-5 shrink-0" />
+                  <input
+                    autoFocus
+                    placeholder="Section name"
+                    onBlur={(event) => {
+                      if (event.target.value.trim()) createSection(event.target.value)
+                      setAddingSection(false)
+                    }}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter') {
+                        if (event.currentTarget.value.trim()) createSection(event.currentTarget.value)
+                        setAddingSection(false)
+                      }
+                      if (event.key === 'Escape') setAddingSection(false)
+                    }}
+                    className="w-full bg-transparent font-medium text-[var(--text-primary)] outline-none placeholder:text-[var(--text-disabled)]"
+                    aria-label="New section name"
+                  />
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setAddingSection(true)}
+                  className="flex items-center gap-2 text-[var(--text-muted)] transition hover:text-[var(--text-secondary)]"
+                >
+                  <StatusGlyph markup={ICON_DASHED_PLUS} className="h-5 w-5 shrink-0" />
+                  <span className="font-medium">Add section</span>
+                </button>
+              )}
+            </div>
+          )}
         </>
       )}
 
