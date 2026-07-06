@@ -81,7 +81,7 @@ function App() {
   const [priorityFilter, setPriorityFilter] = useState('all')
   const [sectionFilter, setSectionFilter] = useState('all')
   const [visibilityFilter, setVisibilityFilter] = useState<'active' | 'archived' | 'all'>('active')
-  const [groupBy, setGroupBy] = useState<'status' | 'priority' | 'scope'>('status')
+  const [groupBy, setGroupBy] = useState<'status' | 'priority' | 'scope' | 'section'>('section')
   const [viewMode, setViewMode] = useState<'card' | 'table' | 'kanban' | 'timeline' | 'calendar'>('table')
   const [isCreateTaskFormOpen, setIsCreateTaskFormOpen] = useState(false)
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null)
@@ -149,6 +149,18 @@ function App() {
       .filter((task) => !task.parent_task_id)
       .sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
 
+    if (groupBy === 'section') {
+      const noSection = parentTasks.filter((task) => !task.section_id)
+      return [
+        ...sections.map((section) => ({
+          id: section.id,
+          name: section.name,
+          tasks: parentTasks.filter((task) => task.section_id === section.id),
+        })),
+        ...(noSection.length > 0 ? [{ id: 'no_section', name: 'No section', tasks: noSection }] : []),
+      ]
+    }
+
     if (groupBy === 'status') {
       return statusOptions.map((status) => ({
         id: status.value,
@@ -184,7 +196,7 @@ function App() {
         tasks: parentTasks.filter((task) => !task.difficulty),
       },
     ]
-  }, [filteredTasks, groupBy])
+  }, [filteredTasks, groupBy, sections])
 
   const stats = useMemo(() => {
     const blockedTaskIds = new Set(dependencies.map((dependency) => dependency.task_id))
@@ -574,7 +586,9 @@ function App() {
   }
 
   function moveTaskToGroup(taskId: string, groupId: string) {
-    if (groupBy === 'status') {
+    if (groupBy === 'section') {
+      updateTaskSection(taskId, groupId === 'no_section' ? '' : groupId)
+    } else if (groupBy === 'status') {
       updateTaskStatus(taskId, groupId)
     } else if (groupBy === 'priority') {
       updateTaskPriority(taskId, groupId === 'no_priority' ? '' : groupId)
@@ -593,7 +607,12 @@ function App() {
 
     const newTask = {
       project_id: projectId,
-      section_id: fallbackSectionId || null,
+      section_id:
+        groupBy === 'section'
+          ? groupId === 'no_section'
+            ? null
+            : groupId
+          : fallbackSectionId || null,
       parent_task_id: null,
       title: trimmed,
       description: null,
@@ -618,10 +637,11 @@ function App() {
   }
 
   async function updateTaskSection(taskId: string, sectionId: string) {
+    const nextSectionId = sectionId || null
     setUpdatingSectionTaskId(taskId)
     setErrorMessage(null)
 
-    const { error } = await supabase.from('tasks').update({ section_id: sectionId }).eq('id', taskId)
+    const { error } = await supabase.from('tasks').update({ section_id: nextSectionId }).eq('id', taskId)
 
     if (error) {
       setErrorMessage(error.message)
@@ -630,9 +650,147 @@ function App() {
     }
 
     setTasks((currentTasks) =>
-      currentTasks.map((task) => (task.id === taskId ? { ...task, section_id: sectionId } : task)),
+      currentTasks.map((task) => (task.id === taskId ? { ...task, section_id: nextSectionId } : task)),
     )
     setUpdatingSectionTaskId(null)
+  }
+
+  // ---- Section management (Asana-style: sections are first-class) ----
+
+  async function createSection(name: string) {
+    const trimmed = name.trim()
+    if (!trimmed || !projectId) return
+
+    const position = (sections[sections.length - 1]?.position ?? 0) + 1
+    const { data, error } = await supabase
+      .from('sections')
+      .insert({ project_id: projectId, name: trimmed, position })
+      .select('id, name, position')
+      .single()
+
+    if (error) {
+      setErrorMessage(error.message)
+      return
+    }
+    if (data) {
+      setSections((current) => [...current, data])
+      await logActivity('Created section', trimmed)
+    }
+  }
+
+  async function renameSection(sectionId: string, name: string) {
+    const trimmed = name.trim()
+    if (!trimmed) return
+
+    const { error } = await supabase.from('sections').update({ name: trimmed }).eq('id', sectionId)
+    if (error) {
+      setErrorMessage(error.message)
+      return
+    }
+    setSections((current) => current.map((s) => (s.id === sectionId ? { ...s, name: trimmed } : s)))
+  }
+
+  // Deleting a section keeps its tasks (they fall back to "No section").
+  async function deleteSection(sectionId: string) {
+    const { error: detachError } = await supabase
+      .from('tasks')
+      .update({ section_id: null })
+      .eq('section_id', sectionId)
+    if (detachError) {
+      setErrorMessage(detachError.message)
+      return
+    }
+
+    const { error } = await supabase.from('sections').delete().eq('id', sectionId)
+    if (error) {
+      setErrorMessage(error.message)
+      return
+    }
+
+    const removed = sections.find((s) => s.id === sectionId)
+    setTasks((current) => current.map((t) => (t.section_id === sectionId ? { ...t, section_id: null } : t)))
+    setSections((current) => current.filter((s) => s.id !== sectionId))
+    await logActivity('Deleted section', removed?.name)
+  }
+
+  async function moveSection(sectionId: string, direction: -1 | 1) {
+    const index = sections.findIndex((s) => s.id === sectionId)
+    const other = sections[index + direction]
+    if (index === -1 || !other) return
+
+    const section = sections[index]
+    const [posA, posB] = [section.position ?? index + 1, other.position ?? index + 1 + direction]
+    const results = await Promise.all([
+      supabase.from('sections').update({ position: posB }).eq('id', section.id),
+      supabase.from('sections').update({ position: posA }).eq('id', other.id),
+    ])
+    const failed = results.find((r) => r.error)
+    if (failed?.error) {
+      setErrorMessage(failed.error.message)
+      return
+    }
+    setSections((current) => {
+      const next = current.map((s) =>
+        s.id === section.id ? { ...s, position: posB } : s.id === other.id ? { ...s, position: posA } : s,
+      )
+      return [...next].sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
+    })
+  }
+
+  // Drag-reorder in the List view: place the dragged task before `beforeTaskId`
+  // (or at the end of the group when null), moving it into the group's section.
+  async function reorderTask(taskId: string, beforeTaskId: string | null, groupId: string) {
+    const dragged = tasks.find((t) => t.id === taskId)
+    if (!dragged || taskId === beforeTaskId) return
+
+    const sectionId = groupBy === 'section' ? (groupId === 'no_section' ? null : groupId) : dragged.section_id
+
+    // Rebuild the global parent-task order with the dragged task relocated.
+    const ordered = tasks
+      .filter((t) => !t.parent_task_id && t.id !== taskId)
+      .sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
+
+    let insertAt = ordered.length
+    if (beforeTaskId) {
+      const idx = ordered.findIndex((t) => t.id === beforeTaskId)
+      if (idx !== -1) insertAt = idx
+    } else {
+      // End of the target section: after its last task in global order.
+      for (let i = ordered.length - 1; i >= 0; i--) {
+        if ((ordered[i].section_id ?? null) === sectionId) {
+          insertAt = i + 1
+          break
+        }
+      }
+    }
+    ordered.splice(insertAt, 0, { ...dragged, section_id: sectionId })
+
+    const updates: { id: string; position: number }[] = []
+    ordered.forEach((t, i) => {
+      const position = i + 1
+      if ((t.position ?? 0) !== position || t.id === taskId) {
+        updates.push({ id: t.id, position })
+      }
+    })
+
+    // Optimistic local update, then persist.
+    setTasks((current) =>
+      current.map((t) => {
+        const u = updates.find((x) => x.id === t.id)
+        const base = u ? { ...t, position: u.position } : t
+        return t.id === taskId ? { ...base, section_id: sectionId } : base
+      }),
+    )
+
+    const results = await Promise.all([
+      supabase.from('tasks').update({ section_id: sectionId }).eq('id', taskId),
+      ...updates.map((u) => supabase.from('tasks').update({ position: u.position }).eq('id', u.id)),
+    ])
+    const failed = results.find((r) => r.error)
+    if (failed?.error) {
+      setErrorMessage(failed.error.message)
+      await loadProjectAndTasks()
+    }
   }
 
   function wouldCreateCircularDependency(taskId: string, dependsOnTaskId: string) {
@@ -1305,6 +1463,7 @@ function App() {
               onChange={(event) => updateTaskSection(task.id, event.target.value)}
               className={`${pillSelectClass} ${pillToneNeutral}`}
             >
+              <option value="">No section</option>
               {sections.map((section) => (
                 <option key={section.id} value={section.id}>{section.name}</option>
               ))}
@@ -1494,6 +1653,11 @@ function App() {
             updateTaskSection={updateTaskSection}
             moveTaskToGroup={moveTaskToGroup}
             addTaskToGroup={addTaskToGroup}
+            createSection={createSection}
+            renameSection={renameSection}
+            deleteSection={deleteSection}
+            moveSection={moveSection}
+            reorderTask={reorderTask}
             getTaskComments={getTaskComments}
             getSubtasks={getSubtasks}
             selectedTaskId={selectedTaskId}
