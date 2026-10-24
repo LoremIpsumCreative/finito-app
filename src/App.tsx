@@ -31,6 +31,8 @@ function App() {
   const [celebrate, setCelebrate] = useState(0)
   // Cosmetic star toggle in the project header (Asana parity).
   const [projectStarred, setProjectStarred] = useState(false)
+  // Hamburger collapses the project sidebar (Asana parity).
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [sections, setSections] = useState<Section[]>([])
   const [dependencies, setDependencies] = useState<TaskDependency[]>([])
   const [comments, setComments] = useState<TaskComment[]>([])
@@ -1549,6 +1551,7 @@ function App() {
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
         onNewTask={toggleCreateTaskForm}
+        onToggleSidebar={() => setSidebarCollapsed((value) => !value)}
       />
 
       <div className="flex min-h-0 flex-1">
@@ -1560,17 +1563,19 @@ function App() {
           userEmail={session.user.email ?? ''}
         />
 
-        <WorkspaceSidebar
-          activityLogs={activityLogs}
-          workspaces={workspaces}
-          currentWorkspaceId={workspaceId}
-          newWorkspaceName={newWorkspaceName}
-          setNewWorkspaceName={setNewWorkspaceName}
-          creatingWorkspace={creatingWorkspace}
-          createWorkspace={createWorkspace}
-          switchWorkspace={switchWorkspace}
-          activeTool={sidebarTool}
-        />
+        {!sidebarCollapsed && (
+          <WorkspaceSidebar
+            activityLogs={activityLogs}
+            workspaces={workspaces}
+            currentWorkspaceId={workspaceId}
+            newWorkspaceName={newWorkspaceName}
+            setNewWorkspaceName={setNewWorkspaceName}
+            creatingWorkspace={creatingWorkspace}
+            createWorkspace={createWorkspace}
+            switchWorkspace={switchWorkspace}
+            activeTool={sidebarTool}
+          />
+        )}
 
         <div className="flex min-h-0 flex-1 flex-col bg-[var(--background-paper)]">
           <div className="flex shrink-0 items-center justify-between gap-3 border-b border-[var(--outline)] px-4 py-2">
