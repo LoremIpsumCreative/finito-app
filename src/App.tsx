@@ -7,6 +7,7 @@ import { difficultyOptions, priorityOptions, statusOptions } from './constants'
 import { formatDate, getLabel, isTaskOverdue } from './utils'
 import { IconRail } from './components/IconRail'
 import { ViewTabs } from './components/ViewTabs'
+import { CompletionCelebration } from './components/CompletionCelebration'
 import { TaskFilters } from './components/TaskFilters'
 import { CreateTaskForm } from './components/CreateTaskForm'
 import { TaskList } from './components/TaskList'
@@ -26,6 +27,8 @@ function App() {
   const [session, setSession] = useState<Session | null>(null)
   const [authReady, setAuthReady] = useState(false)
   const [tasks, setTasks] = useState<Task[]>([])
+  // Bumped each time a task transitions to done, to fire the completion celebration.
+  const [celebrate, setCelebrate] = useState(0)
   const [sections, setSections] = useState<Section[]>([])
   const [dependencies, setDependencies] = useState<TaskDependency[]>([])
   const [comments, setComments] = useState<TaskComment[]>([])
@@ -518,6 +521,10 @@ function App() {
     setTasks((currentTasks) =>
       currentTasks.map((task) => (task.id === taskId ? { ...task, status } : task)),
     )
+
+    if (status === 'done' && updatedTask?.status !== 'done') {
+      setCelebrate((count) => count + 1)
+    }
 
     await logActivity(
       'Updated task status',
@@ -1821,6 +1828,8 @@ function App() {
           New
         </button>
       </nav>
+
+      <CompletionCelebration trigger={celebrate} />
 
       <SettingsModal
         isOpen={isSettingsOpen}
