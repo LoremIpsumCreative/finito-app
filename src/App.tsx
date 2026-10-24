@@ -5,7 +5,8 @@ import { supabase } from './lib/supabase'
 import type { ActivityLog, Section, Task, TaskComment, TaskDependency, Workspace } from './types'
 import { difficultyOptions, priorityOptions, statusOptions } from './constants'
 import { formatDate, getLabel, isTaskOverdue } from './utils'
-import { DashboardStats } from './components/DashboardStats'
+import { IconRail } from './components/IconRail'
+import { ViewTabs } from './components/ViewTabs'
 import { TaskFilters } from './components/TaskFilters'
 import { CreateTaskForm } from './components/CreateTaskForm'
 import { TaskList } from './components/TaskList'
@@ -1522,6 +1523,8 @@ function App() {
     return <AuthScreen />
   }
 
+  const currentWorkspaceName = workspaces.find((w) => w.id === workspaceId)?.name ?? 'Tasks'
+
   const workspacesIcon = <Icon name="workspaces" className="h-[22px] w-[22px]" />
   const activityIcon = <Icon name="activity" className="h-[22px] w-[22px]" />
   const settingsIcon = <Icon name="settings" className="h-[22px] w-[22px]" />
@@ -1532,15 +1535,47 @@ function App() {
   ]
 
   return (
-    <main className="min-h-screen bg-[var(--surface-muted)] text-[var(--text-primary)]">
+    <div className="flex h-screen flex-col bg-[var(--background-default)] text-[var(--text-primary)]">
       <AppHeader
-        viewMode={viewMode}
-        setViewMode={setViewMode}
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
+        onNewTask={toggleCreateTaskForm}
       />
 
-      <section className="mx-auto max-w-[1600px] px-4 pb-24 sm:px-5 lg:pb-5">
+      <div className="flex min-h-0 flex-1">
+        <IconRail
+          activeTool={sidebarTool}
+          setActiveTool={setSidebarTool}
+          onOpenSettings={() => setIsSettingsOpen(true)}
+          signOut={signOut}
+          userEmail={session.user.email ?? ''}
+        />
+
+        <WorkspaceSidebar
+          activityLogs={activityLogs}
+          workspaces={workspaces}
+          currentWorkspaceId={workspaceId}
+          newWorkspaceName={newWorkspaceName}
+          setNewWorkspaceName={setNewWorkspaceName}
+          creatingWorkspace={creatingWorkspace}
+          createWorkspace={createWorkspace}
+          switchWorkspace={switchWorkspace}
+          activeTool={sidebarTool}
+        />
+
+        <div className="flex min-h-0 flex-1 flex-col">
+          <div className="flex shrink-0 items-center justify-between gap-3 border-b border-[var(--outline)] px-4 py-2.5">
+            <div className="flex min-w-0 items-baseline gap-3">
+              <h1 className="truncate text-[20px] font-medium text-[var(--text-primary)]">{currentWorkspaceName}</h1>
+              <span className="shrink-0 text-[13px] text-[var(--text-muted)]">{stats.visible} tasks</span>
+            </div>
+          </div>
+
+          <div className="flex shrink-0 items-center gap-4 border-b border-[var(--outline)] px-4">
+            <ViewTabs viewMode={viewMode} setViewMode={setViewMode} />
+          </div>
+
+          <div className="min-h-0 flex-1 overflow-auto px-4 py-4">
 
         <CreateTaskForm
           isOpen={isCreateTaskFormOpen}
@@ -1600,27 +1635,6 @@ function App() {
 
 
 
-        <div className="mb-4 grid items-stretch gap-4 lg:grid-cols-[240px_minmax(0,1fr)]">
-          <div className="hidden lg:block">
-            <WorkspaceSidebar
-              activityLogs={activityLogs}
-              workspaces={workspaces}
-              currentWorkspaceId={workspaceId}
-              newWorkspaceName={newWorkspaceName}
-              setNewWorkspaceName={setNewWorkspaceName}
-              creatingWorkspace={creatingWorkspace}
-              createWorkspace={createWorkspace}
-              switchWorkspace={switchWorkspace}
-              activeTool={sidebarTool}
-              setActiveTool={setSidebarTool}
-              onOpenSettings={() => setIsSettingsOpen(true)}
-              signOut={signOut}
-            />
-          </div>
-
-          <div className="min-w-0 space-y-4">
-          <DashboardStats stats={stats} onNewTaskClick={toggleCreateTaskForm} />
-
           {viewMode === 'calendar' ? (
             <CalendarView
               tasks={groupedTasks.flatMap((group) => group.tasks)}
@@ -1667,8 +1681,6 @@ function App() {
             setGroupBy={setGroupBy}
           />
           )}
-          </div>
-
           {selectedTask ? (
             <TaskDetailDrawer
               selectedTask={selectedTask}
@@ -1729,8 +1741,9 @@ function App() {
               restoreTask={restoreTask}
             />
           ) : null}
+          </div>
         </div>
-      </section>
+      </div>
 
       {/* Mobile sheet for sidebar tools */}
       {isMobileSheetOpen && (
@@ -1756,13 +1769,7 @@ function App() {
                 setIsMobileSheetOpen(false)
               }}
               activeTool={sidebarTool}
-              setActiveTool={setSidebarTool}
-              onOpenSettings={() => {
-                setIsMobileSheetOpen(false)
-                setIsSettingsOpen(true)
-              }}
-              signOut={signOut}
-              sticky={false}
+              embedded
             />
           </div>
         </div>
@@ -1823,7 +1830,7 @@ function App() {
         setTheme={setTheme}
         signOut={signOut}
       />
-    </main>
+    </div>
   )
 }
 
