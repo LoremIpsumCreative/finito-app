@@ -350,3 +350,13 @@ input::placeholder,
 textarea::placeholder {
   color: var(--text-muted);
 }
+
+/* Task detail pane slide-in (Asana: ~0.5s open) */
+@keyframes finito-pane-in {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+@keyframes finito-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
