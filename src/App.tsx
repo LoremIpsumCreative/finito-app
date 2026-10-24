@@ -1563,7 +1563,7 @@ function App() {
           activeTool={sidebarTool}
         />
 
-        <div className="flex min-h-0 flex-1 flex-col">
+        <div className="flex min-h-0 flex-1 flex-col bg-[var(--background-paper)]">
           <div className="flex shrink-0 items-center justify-between gap-3 border-b border-[var(--outline)] px-4 py-2.5">
             <div className="flex min-w-0 items-baseline gap-3">
               <h1 className="truncate text-[20px] font-medium text-[var(--text-primary)]">{currentWorkspaceName}</h1>

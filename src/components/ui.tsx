@@ -90,15 +90,14 @@ export function SubtaskProgress({ done, total, className = '' }: { done: number;
   )
 }
 
-// Status-toggle glyphs (Tabler outline). Circle is #777; the tick is brand
-// purple. Inline markup so the two-tone colouring works.
+// Status-toggle glyphs (Tabler outline). Circle is #777; the hover tick hints
+// Asana green. Completed state renders a filled green circle (see StatusToggle).
 const DASHED_ARCS =
   '<path d="M8.56 3.69a9 9 0 0 0 -2.92 1.95" /><path d="M3.69 8.56a9 9 0 0 0 -.69 3.44" /><path d="M3.69 15.44a9 9 0 0 0 1.95 2.92" /><path d="M8.56 20.31a9 9 0 0 0 3.44 .69" /><path d="M15.44 20.31a9 9 0 0 0 2.92 -1.95" /><path d="M20.31 15.44a9 9 0 0 0 .69 -3.44" /><path d="M20.31 8.56a9 9 0 0 0 -1.95 -2.92" /><path d="M15.44 3.69a9 9 0 0 0 -3.44 -.69" />'
-const TICK = '<path stroke="#6600ff" d="M9 12l2 2l4 -4" />'
+const TICK = '<path stroke="#46a75a" d="M9 12l2 2l4 -4" />'
 const ICON_DOTTED =
   '<path d="M7.5 4.21l0 .01" /><path d="M4.21 7.5l0 .01" /><path d="M3 12l0 .01" /><path d="M4.21 16.5l0 .01" /><path d="M7.5 19.79l0 .01" /><path d="M12 21l0 .01" /><path d="M16.5 19.79l0 .01" /><path d="M19.79 16.5l0 .01" /><path d="M21 12l0 .01" /><path d="M19.79 7.5l0 .01" /><path d="M16.5 4.21l0 .01" /><path d="M12 3l0 .01" />'
 const ICON_DASHED_CHECK = DASHED_ARCS + TICK
-const ICON_CIRCLE_CHECK = '<path d="M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0" />' + TICK
 export const ICON_DASHED_PLUS = DASHED_ARCS + '<path d="M9 12h6" /><path d="M12 9v6" />'
 
 export function StatusGlyph({ markup, className }: { markup: string; className?: string }) {
@@ -145,7 +144,11 @@ export function StatusToggle({
       className="group/status relative flex h-5 w-5 shrink-0 items-center justify-center disabled:opacity-50"
     >
       {done ? (
-        <StatusGlyph markup={ICON_CIRCLE_CHECK} className="h-5 w-5" />
+        <span className="flex h-[18px] w-[18px] items-center justify-center rounded-full bg-[var(--success-main)]">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round" className="h-3 w-3" aria-hidden="true">
+            <path d="M5 12l5 5l9 -9" />
+          </svg>
+        </span>
       ) : (
         <>
           <StatusGlyph markup={ICON_DOTTED} className="h-5 w-5 transition group-hover/status:opacity-0" />
