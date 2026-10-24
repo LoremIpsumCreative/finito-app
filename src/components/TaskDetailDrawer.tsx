@@ -21,6 +21,9 @@ type TaskDetailDrawerProps = {
   updateTaskPriority: (taskId: string, priority: string) => void
   updatingSectionTaskId: string | null
   updateTaskSection: (taskId: string, sectionId: string) => void
+  updateTaskAssignee: (taskId: string, assigneeId: string | null) => void
+  currentUserId: string | null
+  currentUserInitials: string
   getSubtasks: (taskId: string) => Task[]
   deletingTaskId: string | null
   deleteTask: (taskId: string) => void
@@ -96,6 +99,9 @@ export function TaskDetailDrawer({
   updateTaskPriority,
   updatingSectionTaskId,
   updateTaskSection,
+  updateTaskAssignee,
+  currentUserId,
+  currentUserInitials,
   getSubtasks,
   deletingTaskId,
   deleteTask,
@@ -222,6 +228,30 @@ export function TaskDetailDrawer({
 
           {/* Field stack */}
           <div className="mt-4">
+            <FieldRow label="Assignee">
+              <button
+                type="button"
+                onClick={() => updateTaskAssignee(selectedTask.id, selectedTask.assignee_id ? null : currentUserId)}
+                className="flex items-center gap-2 rounded-[var(--radius-sm)] px-1.5 py-1 text-[14px] transition-colors hover:bg-[var(--background-hover)]"
+              >
+                {selectedTask.assignee_id ? (
+                  <>
+                    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[var(--primary-main)] text-[10px] font-semibold text-[var(--primary-contrast)]">
+                      {currentUserInitials}
+                    </span>
+                    <span className="text-[var(--text-primary)]">You</span>
+                  </>
+                ) : (
+                  <>
+                    <span className="flex h-6 w-6 items-center justify-center rounded-full border border-dashed border-[var(--text-disabled)] text-[var(--text-disabled)]">
+                      <Icon name="profile" className="h-3.5 w-3.5" />
+                    </span>
+                    <span className="text-[var(--text-muted)]">Assign to me</span>
+                  </>
+                )}
+              </button>
+            </FieldRow>
+
             <FieldRow label="Status">
               <select
                 aria-label={`Status for ${selectedTask.title}`}

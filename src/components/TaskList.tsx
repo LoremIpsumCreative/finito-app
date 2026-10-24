@@ -89,6 +89,7 @@ type SortField =
   | 'priority'
   | 'difficulty'
   | 'section_id'
+  | 'assignee'
   | 'start_date'
   | 'due_date'
   | 'comments'
@@ -118,6 +119,9 @@ type TaskListProps = {
   updateTaskPriority: (taskId: string, priority: string) => void
   updateTaskDifficulty: (taskId: string, difficulty: string) => void
   updateTaskSection: (taskId: string, sectionId: string) => void
+  updateTaskAssignee: (taskId: string, assigneeId: string | null) => void
+  currentUserId: string | null
+  currentUserInitials: string
   moveTaskToGroup: (taskId: string, groupId: string) => void
   addTaskToGroup: (groupId: string, title: string) => void
   createSection: (name: string) => void
@@ -143,6 +147,7 @@ const groupByOptions: { value: 'status' | 'priority' | 'scope' | 'section'; labe
 
 const columns: { id: string; label: string; field: SortField; align: 'left' | 'center'; track: string; minWidth: number; icon?: IconName }[] = [
   { id: 'task', label: 'Task', field: 'title', align: 'left', track: 'minmax(320px,1.8fr)', minWidth: 320, icon: 'subtask' },
+  { id: 'assignee', label: 'Assignee', field: 'assignee', align: 'center', track: '110px', minWidth: 110, icon: 'profile' },
   { id: 'status', label: 'Status', field: 'status', align: 'center', track: '150px', minWidth: 150, icon: 'status' },
   { id: 'priority', label: 'Priority', field: 'priority', align: 'center', track: '140px', minWidth: 140, icon: 'priority' },
   { id: 'scope', label: 'Scope', field: 'difficulty', align: 'center', track: '140px', minWidth: 140, icon: 'scope' },
@@ -191,6 +196,10 @@ function getTaskColumnValue(
 
   if (field === 'section_id') {
     return task.section_id ?? null
+  }
+
+  if (field === 'assignee') {
+    return task.assignee_id ?? null
   }
 
   return task[field] ?? null
@@ -242,6 +251,9 @@ export function TaskList({
   updateTaskPriority,
   updateTaskDifficulty,
   updateTaskSection,
+  updateTaskAssignee,
+  currentUserId,
+  currentUserInitials,
   moveTaskToGroup,
   addTaskToGroup,
   createSection,
@@ -292,6 +304,7 @@ export function TaskList({
     priority: [],
     difficulty: [],
     section_id: [],
+    assignee: [],
     start_date: [],
     due_date: [],
     comments: [],
@@ -338,6 +351,10 @@ export function TaskList({
         })),
         { value: '__none__', label: 'No section' },
       ],
+      assignee: [
+        { value: currentUserId ?? '__me__', label: 'Assigned to me' },
+        { value: '__none__', label: 'Unassigned' },
+      ],
       start_date: uniqueOptions(
         allTableTasks
           .map((task) => ({
@@ -377,7 +394,7 @@ export function TaskList({
           .sort((a, b) => Number(a.value) - Number(b.value)),
       ),
     } satisfies Record<FilterField, { value: string; label: string }[]>
-  }, [allTableTasks, getTaskComments, getSubtasks, sections])
+  }, [allTableTasks, getTaskComments, getSubtasks, sections, currentUserId])
 
   const activeFilterCount = Object.values(tableFilters).reduce(
     (total, values) => total + values.length,
@@ -461,6 +478,7 @@ export function TaskList({
       priority: [],
       difficulty: [],
       section_id: [],
+      assignee: [],
       start_date: [],
       due_date: [],
       comments: [],
@@ -874,6 +892,30 @@ export function TaskList({
                             />
                             <p className={`min-w-0 flex-1 truncate text-[var(--text-primary)] ${task.status === 'done' ? 'line-through' : ''}`}>{task.title}</p>
                           </div>
+
+                          {isColumnVisible('assignee') && (
+                          <div className="flex justify-center">
+                            <button
+                              type="button"
+                              onClick={(event) => {
+                                event.stopPropagation()
+                                updateTaskAssignee(task.id, task.assignee_id ? null : currentUserId)
+                              }}
+                              aria-label={task.assignee_id ? 'Unassign' : 'Assign to me'}
+                              title={task.assignee_id ? 'Assigned to you' : 'Assign to me'}
+                            >
+                              {task.assignee_id ? (
+                                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[var(--primary-main)] text-[10px] font-semibold text-[var(--primary-contrast)]">
+                                  {currentUserInitials}
+                                </span>
+                              ) : (
+                                <span className="flex h-6 w-6 items-center justify-center rounded-full border border-dashed border-[var(--text-disabled)] text-[var(--text-disabled)] transition-colors hover:border-[var(--text-muted)] hover:text-[var(--text-muted)]">
+                                  <Icon name="profile" className="h-3.5 w-3.5" />
+                                </span>
+                              )}
+                            </button>
+                          </div>
+                          )}
 
                           {isColumnVisible('status') && (
                           <div className="flex justify-center text-center">

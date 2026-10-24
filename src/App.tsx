@@ -321,7 +321,7 @@ function App() {
 
     const { data, error } = await supabase
       .from('tasks')
-      .select('id, title, description, parent_task_id, status, priority, difficulty, start_date, due_date, archived_at, section_id, position')
+      .select('id, title, description, parent_task_id, status, priority, difficulty, start_date, due_date, archived_at, section_id, assignee_id, position')
       .eq('project_id', project.id)
       .order('position', { ascending: true })
 
@@ -665,6 +665,22 @@ function App() {
       currentTasks.map((task) => (task.id === taskId ? { ...task, section_id: nextSectionId } : task)),
     )
     setUpdatingSectionTaskId(null)
+  }
+
+  // Self-assign toggle (Finito is single-user, so the assignee is the owner or no one).
+  async function updateTaskAssignee(taskId: string, assigneeId: string | null) {
+    setErrorMessage(null)
+
+    const { error } = await supabase.from('tasks').update({ assignee_id: assigneeId }).eq('id', taskId)
+
+    if (error) {
+      setErrorMessage(error.message)
+      return
+    }
+
+    setTasks((currentTasks) =>
+      currentTasks.map((task) => (task.id === taskId ? { ...task, assignee_id: assigneeId } : task)),
+    )
   }
 
   // ---- Section management (Asana-style: sections are first-class) ----
@@ -1106,7 +1122,7 @@ function App() {
         archived_at: null,
         position: siblingSubtasks.length + 1,
       })
-      .select('id, title, description, parent_task_id, status, priority, difficulty, start_date, due_date, archived_at, section_id, position')
+      .select('id, title, description, parent_task_id, status, priority, difficulty, start_date, due_date, archived_at, section_id, assignee_id, position')
       .single()
 
     if (error) {
@@ -1535,6 +1551,8 @@ function App() {
   }
 
   const currentWorkspaceName = workspaces.find((w) => w.id === workspaceId)?.name ?? 'Tasks'
+  const currentUserId = session?.user.id ?? null
+  const currentUserInitials = (session?.user.email ?? '?').slice(0, 2).toUpperCase()
 
   const workspacesIcon = <Icon name="workspaces" className="h-[22px] w-[22px]" />
   const activityIcon = <Icon name="activity" className="h-[22px] w-[22px]" />
@@ -1722,6 +1740,9 @@ function App() {
             updateTaskPriority={updateTaskPriority}
             updateTaskDifficulty={updateTaskDifficulty}
             updateTaskSection={updateTaskSection}
+            updateTaskAssignee={updateTaskAssignee}
+            currentUserId={currentUserId}
+            currentUserInitials={currentUserInitials}
             moveTaskToGroup={moveTaskToGroup}
             addTaskToGroup={addTaskToGroup}
             createSection={createSection}
@@ -1749,6 +1770,9 @@ function App() {
               updateTaskPriority={updateTaskPriority}
               updatingSectionTaskId={updatingSectionTaskId}
               updateTaskSection={updateTaskSection}
+              updateTaskAssignee={updateTaskAssignee}
+              currentUserId={currentUserId}
+              currentUserInitials={currentUserInitials}
               getSubtasks={getSubtasks}
               deletingTaskId={deletingTaskId}
               deleteTask={deleteTask}
