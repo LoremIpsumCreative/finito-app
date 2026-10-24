@@ -3,7 +3,7 @@ import type { ReactNode } from 'react'
 import type { Section, Task } from '../types'
 import { difficultyOptions, priorityOptions, statusOptions } from '../constants'
 import { formatDate } from '../utils'
-import { Badge, Checkbox, EmptyState, ICON_DASHED_PLUS, priorityToneClass, StatusGlyph, StatusOptions, StatusToggle, statusToneClass, TaskListSkeleton } from './ui'
+import { Checkbox, EmptyState, ICON_DASHED_PLUS, priorityToneClass, StatusGlyph, StatusOptions, StatusToggle, statusToneClass, TaskListSkeleton } from './ui'
 import { Icon } from './icons'
 import type { IconName } from './icons'
 
@@ -89,6 +89,7 @@ type SortField =
   | 'priority'
   | 'difficulty'
   | 'section_id'
+  | 'assignee'
   | 'start_date'
   | 'due_date'
   | 'comments'
@@ -118,6 +119,9 @@ type TaskListProps = {
   updateTaskPriority: (taskId: string, priority: string) => void
   updateTaskDifficulty: (taskId: string, difficulty: string) => void
   updateTaskSection: (taskId: string, sectionId: string) => void
+  updateTaskAssignee: (taskId: string, assigneeId: string | null) => void
+  currentUserId: string | null
+  currentUserInitials: string
   moveTaskToGroup: (taskId: string, groupId: string) => void
   addTaskToGroup: (groupId: string, title: string) => void
   createSection: (name: string) => void
@@ -143,6 +147,7 @@ const groupByOptions: { value: 'status' | 'priority' | 'scope' | 'section'; labe
 
 const columns: { id: string; label: string; field: SortField; align: 'left' | 'center'; track: string; minWidth: number; icon?: IconName }[] = [
   { id: 'task', label: 'Task', field: 'title', align: 'left', track: 'minmax(320px,1.8fr)', minWidth: 320, icon: 'subtask' },
+  { id: 'assignee', label: 'Assignee', field: 'assignee', align: 'center', track: '110px', minWidth: 110, icon: 'profile' },
   { id: 'status', label: 'Status', field: 'status', align: 'center', track: '150px', minWidth: 150, icon: 'status' },
   { id: 'priority', label: 'Priority', field: 'priority', align: 'center', track: '140px', minWidth: 140, icon: 'priority' },
   { id: 'scope', label: 'Scope', field: 'difficulty', align: 'center', track: '140px', minWidth: 140, icon: 'scope' },
@@ -191,6 +196,10 @@ function getTaskColumnValue(
 
   if (field === 'section_id') {
     return task.section_id ?? null
+  }
+
+  if (field === 'assignee') {
+    return task.assignee_id ?? null
   }
 
   return task[field] ?? null
@@ -242,6 +251,9 @@ export function TaskList({
   updateTaskPriority,
   updateTaskDifficulty,
   updateTaskSection,
+  updateTaskAssignee,
+  currentUserId,
+  currentUserInitials,
   moveTaskToGroup,
   addTaskToGroup,
   createSection,
@@ -276,11 +288,13 @@ export function TaskList({
   const [openHeaderMenu, setOpenHeaderMenu] = useState<string | null>(null)
   const [columnsMenuOpen, setColumnsMenuOpen] = useState(false)
   const [hiddenColumns, setHiddenColumns] = useState<Record<string, boolean>>(() => {
+    // Asana's list is sparse by default; hide the denser columns until asked for.
+    const defaults: Record<string, boolean> = { scope: true, section: true, start: true, subtasks: true }
     try {
       const stored = localStorage.getItem('finito-hidden-columns')
-      return stored ? (JSON.parse(stored) as Record<string, boolean>) : {}
+      return stored ? (JSON.parse(stored) as Record<string, boolean>) : defaults
     } catch {
-      return {}
+      return defaults
     }
   })
   const [tableSort, setTableSort] = useState<TableSort | null>(null)
@@ -290,6 +304,7 @@ export function TaskList({
     priority: [],
     difficulty: [],
     section_id: [],
+    assignee: [],
     start_date: [],
     due_date: [],
     comments: [],
@@ -336,6 +351,10 @@ export function TaskList({
         })),
         { value: '__none__', label: 'No section' },
       ],
+      assignee: [
+        { value: currentUserId ?? '__me__', label: 'Assigned to me' },
+        { value: '__none__', label: 'Unassigned' },
+      ],
       start_date: uniqueOptions(
         allTableTasks
           .map((task) => ({
@@ -375,7 +394,7 @@ export function TaskList({
           .sort((a, b) => Number(a.value) - Number(b.value)),
       ),
     } satisfies Record<FilterField, { value: string; label: string }[]>
-  }, [allTableTasks, getTaskComments, getSubtasks, sections])
+  }, [allTableTasks, getTaskComments, getSubtasks, sections, currentUserId])
 
   const activeFilterCount = Object.values(tableFilters).reduce(
     (total, values) => total + values.length,
@@ -459,6 +478,7 @@ export function TaskList({
       priority: [],
       difficulty: [],
       section_id: [],
+      assignee: [],
       start_date: [],
       due_date: [],
       comments: [],
@@ -568,13 +588,11 @@ export function TaskList({
         <button
           type="button"
           onClick={() => setOpenHeaderMenu((currentValue) => (currentValue === column.id ? null : column.id))}
-          className="group/h inline-flex items-center gap-1.5 rounded-md px-1.5 py-1 text-[13px] font-medium text-[var(--text-muted)] transition hover:bg-[var(--surface-subtle)] hover:text-[var(--text-secondary)]"
+          className="group/h inline-flex items-center gap-1 rounded-[var(--radius-sm)] px-1.5 py-0.5 text-[13px] font-normal text-[var(--text-muted)] transition-colors hover:bg-[var(--background-hover)] hover:text-[var(--text-secondary)]"
         >
-          {column.icon && <Icon name={column.icon} className="h-3.5 w-3.5 shrink-0 text-[var(--text-disabled)]" />}
           {column.label}
           {isSorted && <span className="text-[var(--text-secondary)]">{tableSort.direction === 'asc' ? '↑' : '↓'}</span>}
-          {hasFilter && <span className="h-1.5 w-1.5 rounded-full bg-[var(--primary-main)]" />}
-          <span className="text-[9px] opacity-0 transition group-hover/h:opacity-100">⌄</span>
+          {hasFilter && <span className="h-1.5 w-1.5 rounded-full bg-[var(--primary)]" />}
         </button>
         {renderHeaderMenu(column)}
       </div>
@@ -584,7 +602,7 @@ export function TaskList({
   // Group header shared by the list & card views: collapse chevron + name +
   // count, and (for real sections when grouped by section) hover controls to
   // rename, reorder, and delete the section — Asana-style section management.
-  function renderGroupHeader(group: TaskGroup, subtle: boolean) {
+  function renderGroupHeader(group: TaskGroup) {
     const isRealSection = groupBy === 'section' && group.id !== 'no_section'
     const sectionIndex = isRealSection ? sections.findIndex((s) => s.id === group.id) : -1
     const isCollapsed = !!collapsedGroups[group.id]
@@ -599,17 +617,17 @@ export function TaskList({
     }
 
     const controlClass =
-      'flex h-6 w-6 items-center justify-center rounded text-[var(--text-muted)] transition hover:bg-[var(--surface-muted)] hover:text-[var(--text-primary)] disabled:opacity-30'
+      'flex h-6 w-6 items-center justify-center rounded-[var(--radius-sm)] text-[var(--text-muted)] transition-colors hover:bg-[var(--background-hover)] hover:text-[var(--text-primary)] disabled:opacity-30'
 
     return (
-      <div className={`group/sec flex items-center gap-2 px-4 py-2 ${subtle ? 'bg-[var(--surface-subtle)]' : 'bg-[var(--surface-muted)]'}`}>
+      <div className="group/sec flex items-center gap-1.5 border-t border-[var(--outline)] px-2 py-1.5 first:border-t-0">
         <button
           type="button"
           onClick={() => setCollapsedGroups((current) => ({ ...current, [group.id]: !current[group.id] }))}
           aria-label={isCollapsed ? 'Expand section' : 'Collapse section'}
-          className="flex h-5 w-5 shrink-0 items-center justify-center rounded text-[var(--text-muted)] transition hover:bg-[var(--surface-muted)] hover:text-[var(--text-primary)]"
+          className="flex h-6 w-6 shrink-0 items-center justify-center rounded-[var(--radius-sm)] text-[var(--text-muted)] transition-colors hover:bg-[var(--background-hover)] hover:text-[var(--text-primary)]"
         >
-          <Icon name="chevron" className={`h-3.5 w-3.5 transition-transform ${isCollapsed ? '-rotate-90' : ''}`} />
+          <Icon name="chevron" className={`h-4 w-4 transition-transform ${isCollapsed ? '-rotate-90' : ''}`} />
         </button>
 
         {isRenaming ? (
@@ -621,14 +639,18 @@ export function TaskList({
               if (event.key === 'Enter') commitRename(event.currentTarget.value)
               if (event.key === 'Escape') setRenamingSectionId(null)
             }}
-            className="min-w-0 flex-1 bg-transparent text-[13px] font-bold uppercase tracking-[0.16em] text-[var(--text-primary)] outline-none"
+            className="min-w-0 flex-1 bg-transparent text-[16px] font-medium text-[var(--text-primary)] outline-none"
             aria-label="Section name"
           />
         ) : (
-          <h3 className="min-w-0 truncate text-[13px] font-bold uppercase tracking-[0.16em] text-[var(--text-secondary)]">
+          <h3 className="min-w-0 truncate text-[16px] font-medium text-[var(--text-primary)]">
             {group.name}
           </h3>
         )}
+
+        <span className="shrink-0 text-[13px] font-normal text-[var(--text-muted)]">
+          {group.tasks.length}
+        </span>
 
         {isRealSection && !isRenaming && (
           <div className="hidden shrink-0 items-center gap-0.5 group-hover/sec:flex">
@@ -649,7 +671,7 @@ export function TaskList({
                   deleteSection(group.id)
                 }}
                 onBlur={() => setConfirmDeleteSectionId(null)}
-                className="rounded px-1.5 text-[13px] font-semibold text-[var(--error-dark)] transition hover:bg-[var(--error-light)]"
+                className="rounded-[var(--radius-sm)] px-1.5 text-[13px] font-semibold text-[var(--error-dark)] transition hover:bg-[var(--error-light)]"
               >
                 Delete?
               </button>
@@ -660,16 +682,14 @@ export function TaskList({
             )}
           </div>
         )}
-
-        <span className="ml-auto shrink-0 text-[13px] font-medium text-[var(--text-muted)]">
-          {group.tasks.length} tasks
-        </span>
       </div>
     )
   }
 
   const isTable = viewMode === 'table'
   const displayedCount = isTable ? tableVisibleCount : filteredTaskCount
+  const toolbarBtn =
+    'flex items-center gap-1.5 rounded-[var(--radius-sm)] px-2 py-1 text-[13px] font-medium text-[var(--text-secondary)] transition-colors hover:bg-[var(--background-hover)] hover:text-[var(--text-primary)]'
 
   useEffect(() => {
     localStorage.setItem('finito-hidden-columns', JSON.stringify(hiddenColumns))
@@ -709,63 +729,57 @@ export function TaskList({
 
   return (
     <div className="space-y-3">
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[var(--outline-soft)] bg-[var(--background-paper)] px-4 py-3 shadow-sm">
-        <div>
-          <h2 className="text-[13px] font-semibold text-[var(--text-primary)]">
-            {viewMode === 'table' ? 'List view' : viewMode === 'kanban' ? 'Kanban board' : 'Card view'}
-          </h2>
-          <p className="text-xs text-[var(--text-muted)]">
-            Grouped by {groupByOptions.find((option) => option.value === groupBy)?.label.toLowerCase()}
-          </p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="flex items-center gap-1.5">
-            <span className="text-[13px] font-medium text-[var(--text-muted)]">Group by</span>
-            <div className="flex rounded-full border border-[var(--outline-soft)] bg-[var(--surface-muted)] p-0.5">
-              {groupByOptions.map((option) => (
-                <button
-                  key={option.value}
-                  type="button"
-                  onClick={() => setGroupBy(option.value)}
-                  className={`rounded-full px-2.5 py-1 text-[13px] font-semibold transition ${
-                    groupBy === option.value
-                      ? 'bg-[var(--primary-main)] text-white shadow-sm'
-                      : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
-                  }`}
-                >
-                  {option.label}
-                </button>
-              ))}
-            </div>
+      <div className="flex flex-wrap items-center gap-1 pb-3">
+        <div className="flex items-center gap-1.5">
+          <span className="text-[13px] text-[var(--text-muted)]">Group by</span>
+          <div className="flex rounded-[var(--radius-md)] bg-[var(--surface-subtle)] p-0.5">
+            {groupByOptions.map((option) => (
+              <button
+                key={option.value}
+                type="button"
+                onClick={() => setGroupBy(option.value)}
+                className={`rounded-[var(--radius-sm)] px-2.5 py-1 text-[13px] font-medium transition-colors ${
+                  groupBy === option.value
+                    ? 'bg-[var(--background-paper)] text-[var(--text-primary)] shadow-[var(--shadow-xs)]'
+                    : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
+                }`}
+              >
+                {option.label}
+              </button>
+            ))}
           </div>
+        </div>
+
+        <div className="ml-auto flex items-center gap-0.5">
+          <button type="button" className={toolbarBtn} title="Filter">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
+              <path d="M4 4h16v2.172a2 2 0 0 1 -.586 1.414l-4.414 4.414v7l-6 2v-8.5l-4.48 -4.928a2 2 0 0 1 -.52 -1.345v-2.141a1 1 0 0 1 1 -1z" />
+            </svg>
+            Filter
+          </button>
+          <button type="button" className={toolbarBtn} title="Sort">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
+              <path d="M3 9l4 -4l4 4m-4 -4v14" /><path d="M21 15l-4 4l-4 -4m4 4v-14" />
+            </svg>
+            Sort
+          </button>
           {isTable && (tableSort || activeFilterCount > 0) && (
-            <button
-              type="button"
-              onClick={clearTableControls}
-              className="rounded-full border border-[var(--outline)] bg-[var(--background-paper)] px-3 py-1 text-[13px] font-semibold text-[var(--text-secondary)] transition hover:bg-[var(--surface-muted)]"
-            >
-              Clear table controls
+            <button type="button" onClick={clearTableControls} className={toolbarBtn}>
+              Clear
             </button>
           )}
           {isTable && (
             <div className="relative">
-              <button
-                type="button"
-                onClick={() => setColumnsMenuOpen((open) => !open)}
-                className="flex items-center gap-1.5 rounded-full border border-[var(--outline)] bg-[var(--background-paper)] px-3 py-1 text-[13px] font-semibold text-[var(--text-secondary)] transition hover:bg-[var(--surface-muted)]"
-              >
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-3.5 w-3.5">
-                  <rect x="3" y="3" width="18" height="18" rx="2" />
-                  <path d="M9 3v18M15 3v18" />
-                </svg>
-                Columns
+              <button type="button" onClick={() => setColumnsMenuOpen((open) => !open)} className={toolbarBtn} title="Options">
+                <Icon name="settings" className="h-4 w-4" />
+                Options
               </button>
 
               {columnsMenuOpen && (
                 <>
                   <div className="fixed inset-0 z-10" onClick={() => setColumnsMenuOpen(false)} aria-hidden="true" />
-                  <div className="absolute right-0 top-9 z-20 w-48 rounded-xl border border-[var(--outline-soft)] bg-[var(--background-paper)] p-1.5 shadow-xl">
-                    <p className="px-2.5 py-1.5 text-[11px] font-bold uppercase tracking-[0.12em] text-[var(--text-muted)]">Show columns</p>
+                  <div className="absolute right-0 top-9 z-20 w-48 rounded-[var(--radius-md)] border border-[var(--outline)] bg-[var(--background-paper)] p-1.5 shadow-[var(--shadow-popover)]">
+                    <p className="px-2.5 py-1.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--text-muted)]">Show columns</p>
                     {toggleableColumns.map((column) => (
                       <Checkbox
                         key={column.id}
@@ -773,7 +787,7 @@ export function TaskList({
                         onChange={() => toggleColumn(column.id)}
                         size={16}
                         label={column.label}
-                        className="w-full rounded-lg px-2.5 py-1.5 transition hover:bg-[var(--surface-muted)]"
+                        className="w-full rounded-[var(--radius-sm)] px-2.5 py-1.5 transition-colors hover:bg-[var(--background-hover)]"
                       />
                     ))}
                   </div>
@@ -781,9 +795,7 @@ export function TaskList({
               )}
             </div>
           )}
-          <Badge tone="primary" className="uppercase tracking-[0.04em]">
-            {displayedCount} visible
-          </Badge>
+          <span className="ml-1 text-[13px] text-[var(--text-muted)]">{displayedCount} tasks</span>
         </div>
       </div>
 
@@ -797,7 +809,7 @@ export function TaskList({
         <>
           {groupedTasks.filter((group) => group.tasks.length > 0).map((group) => (
             <section key={group.id} className="overflow-hidden rounded-xl border border-[var(--outline-soft)] bg-[var(--background-paper)] shadow-sm">
-              {renderGroupHeader(group, false)}
+              {renderGroupHeader(group)}
 
               {!collapsedGroups[group.id] && (
               <div className="divide-y divide-[var(--outline-soft)]">
@@ -821,18 +833,22 @@ export function TaskList({
       )}
 
       {!isLoading && !errorMessage && viewMode === 'table' && (
-        <>
-          {tableGroups.map((group) => (
-            <section key={group.id} className="overflow-hidden rounded-xl border border-[var(--outline-soft)] bg-[var(--background-paper)] shadow-sm">
-              {renderGroupHeader(group, true)}
-              {!collapsedGroups[group.id] && (
-              <div className="overflow-x-auto">
-                <div style={{ minWidth: `${tableMinWidth}px` }}>
-                  <div className="grid border-b border-[var(--outline-soft)] bg-[var(--surface-muted)] px-4 py-1.5 [&>div]:flex [&>div]:items-center [&>div]:border-r [&>div]:border-[var(--outline-soft)] [&>div]:px-2 [&>div:first-child]:pl-0 [&>div:last-child]:border-r-0" style={{ gridTemplateColumns }}>
-                    {visibleColumns.map((column) => (
-                      <div key={column.id}>{renderHeaderButton(column)}</div>
-                    ))}
-                  </div>
+        <div className="min-w-full">
+          <div style={{ minWidth: `${tableMinWidth}px` }}>
+            {/* One sticky column header for the whole list (Asana) */}
+            <div
+              className="sticky top-0 z-10 grid border-b border-[var(--outline)] bg-[var(--background-paper)] px-2 [&>div]:flex [&>div]:min-h-[33px] [&>div]:items-center [&>div]:px-2"
+              style={{ gridTemplateColumns }}
+            >
+              {visibleColumns.map((column) => (
+                <div key={column.id}>{renderHeaderButton(column)}</div>
+              ))}
+            </div>
+
+            {tableGroups.map((group) => (
+              <div key={group.id}>
+                {renderGroupHeader(group)}
+                {!collapsedGroups[group.id] && (
                   <div className="divide-y divide-[var(--outline-soft)]">
                     {group.tasks.map((task) => {
                       const subtasks = getSubtasks(task.id)
@@ -865,12 +881,12 @@ export function TaskList({
                           style={{
                             gridTemplateColumns,
                             ...(rowDropTarget?.group === group.id && rowDropTarget.before === task.id
-                              ? { boxShadow: 'inset 0 2px 0 0 var(--primary-main)' }
+                              ? { boxShadow: 'inset 0 2px 0 0 var(--primary)' }
                               : {}),
                           }}
-                          className={`grid cursor-pointer items-stretch gap-0 px-4 text-[13px] transition hover:bg-[var(--surface-muted)] [&>div]:flex [&>div]:min-h-[38px] [&>div]:items-center [&>div]:border-r [&>div]:border-[var(--outline-soft)] [&>div]:px-2 [&>div:first-child]:pl-0 [&>div:last-child]:border-r-0 ${
-                            selectedTaskId === task.id ? 'bg-[var(--surface-subtle)]' : ''
-                          } ${task.status === 'done' ? 'opacity-55' : ''} ${rowDragId === task.id ? 'opacity-40' : ''}`}
+                          className={`grid cursor-pointer items-stretch px-2 text-[13px] transition-colors hover:bg-[var(--background-hover)] [&>div]:flex [&>div]:min-h-[37px] [&>div]:items-center [&>div]:px-2 ${
+                            selectedTaskId === task.id ? 'bg-[var(--primary-soft)]' : ''
+                          } ${task.status === 'done' ? 'opacity-60' : ''} ${rowDragId === task.id ? 'opacity-40' : ''}`}
                         >
                           <div className="min-w-0 gap-2 text-left">
                             <StatusToggle
@@ -878,13 +894,32 @@ export function TaskList({
                               disabled={updatingStatusTaskId === task.id}
                               onToggle={() => updateTaskStatus(task.id, task.status === 'done' ? 'not_started' : 'done')}
                             />
-                            <div className="min-w-0 flex-1">
-                              <p className={`truncate font-medium text-[var(--text-primary)] ${task.status === 'done' ? 'line-through' : ''}`}>{task.title}</p>
-                              {task.description && (
-                                <p className="truncate text-xs text-[var(--text-muted)]">{task.description}</p>
-                              )}
-                            </div>
+                            <p className={`min-w-0 flex-1 truncate text-[var(--text-primary)] ${task.status === 'done' ? 'line-through' : ''}`}>{task.title}</p>
                           </div>
+
+                          {isColumnVisible('assignee') && (
+                          <div className="flex justify-center">
+                            <button
+                              type="button"
+                              onClick={(event) => {
+                                event.stopPropagation()
+                                updateTaskAssignee(task.id, task.assignee_id ? null : currentUserId)
+                              }}
+                              aria-label={task.assignee_id ? 'Unassign' : 'Assign to me'}
+                              title={task.assignee_id ? 'Assigned to you' : 'Assign to me'}
+                            >
+                              {task.assignee_id ? (
+                                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[var(--primary-main)] text-[10px] font-semibold text-[var(--primary-contrast)]">
+                                  {currentUserInitials}
+                                </span>
+                              ) : (
+                                <span className="flex h-6 w-6 items-center justify-center rounded-full border border-dashed border-[var(--text-disabled)] text-[var(--text-disabled)] transition-colors hover:border-[var(--text-muted)] hover:text-[var(--text-muted)]">
+                                  <Icon name="profile" className="h-3.5 w-3.5" />
+                                </span>
+                              )}
+                            </button>
+                          </div>
+                          )}
 
                           {isColumnVisible('status') && (
                           <div className="flex justify-center text-center">
@@ -893,7 +928,7 @@ export function TaskList({
                               disabled={updatingStatusTaskId === task.id}
                               onClick={(event) => event.stopPropagation()}
                               onChange={(event) => updateTaskStatus(task.id, event.target.value)}
-                              className={`h-8 max-w-[140px] cursor-pointer rounded-full border px-2.5 text-center text-[13px] font-semibold outline-none ${statusToneClass(task.status)}`}
+                              className={`h-7 max-w-[140px] cursor-pointer rounded-[var(--radius-full)] px-2.5 text-center text-[13px] font-medium outline-none ${statusToneClass(task.status)}`}
                             >
                               <StatusOptions />
                             </select>
@@ -907,7 +942,7 @@ export function TaskList({
                               disabled={updatingPriorityTaskId === task.id}
                               onClick={(event) => event.stopPropagation()}
                               onChange={(event) => updateTaskPriority(task.id, event.target.value)}
-                              className={`h-8 max-w-[130px] cursor-pointer rounded-full border px-2.5 text-center text-[13px] font-semibold outline-none ${priorityToneClass(task.priority)}`}
+                              className={`h-7 max-w-[130px] cursor-pointer rounded-[var(--radius-full)] px-2.5 text-center text-[13px] font-medium outline-none ${priorityToneClass(task.priority)}`}
                             >
                               <option value="">No priority</option>
                               {priorityOptions.map((priority) => (
@@ -926,7 +961,7 @@ export function TaskList({
                               disabled={updatingDifficultyTaskId === task.id}
                               onClick={(event) => event.stopPropagation()}
                               onChange={(event) => updateTaskDifficulty(task.id, event.target.value)}
-                              className="h-8 max-w-[140px] cursor-pointer rounded-full border border-[var(--outline)] bg-[var(--surface-muted)] px-2.5 text-center text-[13px] font-semibold text-[var(--text-secondary)] outline-none"
+                              className="h-7 max-w-[140px] cursor-pointer rounded-[var(--radius-full)] border border-transparent bg-[var(--surface-subtle)] px-2.5 text-center text-[13px] font-medium text-[var(--text-secondary)] outline-none"
                             >
                               {difficultyOptions.map((difficulty) => (
                                 <option key={difficulty.value} value={difficulty.value}>
@@ -944,7 +979,7 @@ export function TaskList({
                               disabled={updatingSectionTaskId === task.id || sections.length === 0}
                               onClick={(event) => event.stopPropagation()}
                               onChange={(event) => updateTaskSection(task.id, event.target.value)}
-                              className="h-8 max-w-[140px] cursor-pointer rounded-full border border-[var(--outline)] bg-[var(--surface-muted)] px-2.5 text-center text-[13px] font-semibold text-[var(--text-secondary)] outline-none"
+                              className="h-7 max-w-[140px] cursor-pointer rounded-[var(--radius-full)] border border-transparent bg-[var(--surface-subtle)] px-2.5 text-center text-[13px] font-medium text-[var(--text-secondary)] outline-none"
                             >
                               <option value="">No section</option>
                               {sections.map((sectionOption) => (
@@ -969,7 +1004,7 @@ export function TaskList({
                           )}
 
                           {isColumnVisible('subtasks') && (
-                          <div className="justify-center text-center text-[13px] font-medium text-[var(--text-secondary)]">
+                          <div className="justify-center text-center text-[13px] text-[var(--text-secondary)]">
                             {completedSubtasks}/{subtasks.length}
                           </div>
                           )}
@@ -990,59 +1025,58 @@ export function TaskList({
                       }}
                       style={
                         rowDropTarget?.group === group.id && rowDropTarget.before === null
-                          ? { boxShadow: 'inset 0 2px 0 0 var(--primary-main)' }
+                          ? { boxShadow: 'inset 0 2px 0 0 var(--primary)' }
                           : undefined
                       }
                     >
                       <AddTaskRow groupId={group.id} onAdd={addTaskToGroup} />
                     </div>
                   </div>
-                </div>
+                )}
               </div>
-              )}
-            </section>
-          ))}
+            ))}
 
-          {groupBy === 'section' && (
-            <div className="rounded-xl border border-dashed border-[var(--outline)] bg-transparent px-4 py-2 text-[13px]">
-              {addingSection ? (
-                <div className="flex items-center gap-2">
-                  <StatusGlyph markup={ICON_DASHED_PLUS} className="h-5 w-5 shrink-0" />
-                  <input
-                    autoFocus
-                    placeholder="Section name"
-                    onBlur={(event) => {
-                      if (event.target.value.trim()) createSection(event.target.value)
-                      setAddingSection(false)
-                    }}
-                    onKeyDown={(event) => {
-                      if (event.key === 'Enter') {
-                        if (event.currentTarget.value.trim()) createSection(event.currentTarget.value)
+            {groupBy === 'section' && (
+              <div className="border-t border-[var(--outline)] px-3 py-2 text-[13px]">
+                {addingSection ? (
+                  <div className="flex items-center gap-2">
+                    <StatusGlyph markup={ICON_DASHED_PLUS} className="h-5 w-5 shrink-0" />
+                    <input
+                      autoFocus
+                      placeholder="Section name"
+                      onBlur={(event) => {
+                        if (event.target.value.trim()) createSection(event.target.value)
                         setAddingSection(false)
-                      }
-                      if (event.key === 'Escape') setAddingSection(false)
-                    }}
-                    className="w-full bg-transparent font-medium text-[var(--text-primary)] outline-none placeholder:text-[var(--text-disabled)]"
-                    aria-label="New section name"
-                  />
-                </div>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => setAddingSection(true)}
-                  className="flex items-center gap-2 text-[var(--text-muted)] transition hover:text-[var(--text-secondary)]"
-                >
-                  <StatusGlyph markup={ICON_DASHED_PLUS} className="h-5 w-5 shrink-0" />
-                  <span className="font-medium">Add section</span>
-                </button>
-              )}
-            </div>
-          )}
-        </>
+                      }}
+                      onKeyDown={(event) => {
+                        if (event.key === 'Enter') {
+                          if (event.currentTarget.value.trim()) createSection(event.currentTarget.value)
+                          setAddingSection(false)
+                        }
+                        if (event.key === 'Escape') setAddingSection(false)
+                      }}
+                      className="w-full bg-transparent text-[var(--text-primary)] outline-none placeholder:text-[var(--text-disabled)]"
+                      aria-label="New section name"
+                    />
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setAddingSection(true)}
+                    className="flex items-center gap-1.5 text-[var(--text-muted)] transition-colors hover:text-[var(--text-secondary)]"
+                  >
+                    <span className="text-[16px] leading-none">+</span>
+                    <span>Add section</span>
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
       )}
 
       {!isLoading && !errorMessage && viewMode === 'kanban' && (
-        <div className="flex gap-3 overflow-x-auto pb-2">
+        <div className="flex gap-4 overflow-x-auto pb-2">
           {groupedTasks.map((group) => (
             <section
               key={group.id}
@@ -1058,22 +1092,16 @@ export function TaskList({
                 setDragTaskId(null)
                 setDragOverGroup(null)
               }}
-              className={`flex w-72 shrink-0 flex-col rounded-2xl border bg-[var(--surface-muted)] transition ${
-                dragOverGroup === group.id
-                  ? 'border-[var(--primary-main)] ring-2 ring-[var(--primary-main)]/20'
-                  : 'border-[var(--outline-soft)]'
+              className={`flex w-[300px] shrink-0 flex-col gap-2 rounded-[var(--radius-md)] p-1 transition-colors ${
+                dragOverGroup === group.id ? 'bg-[var(--background-hover)]' : ''
               }`}
             >
-              <div className="flex items-center justify-between gap-2 border-b border-[var(--outline-soft)] px-3 py-2.5">
-                <h3 className="truncate text-[13px] font-bold uppercase tracking-[0.12em] text-[var(--text-secondary)]">
-                  {group.name}
-                </h3>
-                <span className="shrink-0 rounded-full bg-[var(--background-paper)] px-2 py-0.5 text-[11px] font-semibold text-[var(--text-muted)]">
-                  {group.tasks.length}
-                </span>
+              <div className="flex items-center gap-2 px-1.5 py-1">
+                <h3 className="truncate text-[15px] font-medium text-[var(--text-primary)]">{group.name}</h3>
+                <span className="shrink-0 text-[13px] text-[var(--text-muted)]">{group.tasks.length}</span>
               </div>
 
-              <div className="flex flex-1 flex-col gap-2 p-2">
+              <div className="flex flex-1 flex-col gap-2">
                 {group.tasks.map((task) => (
                   <div
                     key={task.id}
@@ -1084,8 +1112,8 @@ export function TaskList({
                       setDragOverGroup(null)
                     }}
                     onClick={() => onOpenTask(task.id)}
-                    className={`cursor-pointer overflow-hidden rounded-xl border bg-[var(--background-paper)] shadow-sm transition hover:shadow-md ${
-                      selectedTaskId === task.id ? 'border-[var(--primary-main)] ring-2 ring-[var(--primary-main)]/20' : 'border-[var(--outline-soft)]'
+                    className={`cursor-pointer overflow-hidden rounded-[var(--radius-md)] border bg-[var(--surface-subtle)] shadow-[var(--shadow-xs)] transition-shadow hover:shadow-[var(--shadow-sm)] ${
+                      selectedTaskId === task.id ? 'border-[var(--primary)] ring-1 ring-[var(--primary)]' : 'border-[var(--outline)]'
                     } ${dragTaskId === task.id ? 'opacity-50' : ''}`}
                   >
                     {renderTask(task)}
@@ -1093,7 +1121,7 @@ export function TaskList({
                 ))}
 
                 {group.tasks.length === 0 && (
-                  <p className="rounded-xl border border-dashed border-[var(--outline)] px-3 py-6 text-center text-xs text-[var(--text-muted)]">
+                  <p className="rounded-[var(--radius-md)] border border-dashed border-[var(--outline)] px-3 py-6 text-center text-[12px] text-[var(--text-muted)]">
                     Drop tasks here
                   </p>
                 )}

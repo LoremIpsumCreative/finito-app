@@ -1,106 +1,13 @@
 @import "tailwindcss";
 
-/* ---- Atkinson Hyperlegible Next (body) ---- */
-@font-face {
-  font-family: "Atkinson Hyperlegible Next";
-  src: url("/fonts/AtkinsonHyperlegibleNext-ExtraLight.woff2") format("woff2");
-  font-weight: 200;
-  font-style: normal;
-  font-display: swap;
-}
-@font-face {
-  font-family: "Atkinson Hyperlegible Next";
-  src: url("/fonts/AtkinsonHyperlegibleNext-ExtraLightItalic.woff2") format("woff2");
-  font-weight: 200;
-  font-style: italic;
-  font-display: swap;
-}
-@font-face {
-  font-family: "Atkinson Hyperlegible Next";
-  src: url("/fonts/AtkinsonHyperlegibleNext-Light.woff2") format("woff2");
-  font-weight: 300;
-  font-style: normal;
-  font-display: swap;
-}
-@font-face {
-  font-family: "Atkinson Hyperlegible Next";
-  src: url("/fonts/AtkinsonHyperlegibleNext-LightItalic.woff2") format("woff2");
-  font-weight: 300;
-  font-style: italic;
-  font-display: swap;
-}
-@font-face {
-  font-family: "Atkinson Hyperlegible Next";
-  src: url("/fonts/AtkinsonHyperlegibleNext-Regular.woff2") format("woff2");
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-}
-@font-face {
-  font-family: "Atkinson Hyperlegible Next";
-  src: url("/fonts/AtkinsonHyperlegibleNext-RegularItalic.woff2") format("woff2");
-  font-weight: 400;
-  font-style: italic;
-  font-display: swap;
-}
-@font-face {
-  font-family: "Atkinson Hyperlegible Next";
-  src: url("/fonts/AtkinsonHyperlegibleNext-Medium.woff2") format("woff2");
-  font-weight: 500;
-  font-style: normal;
-  font-display: swap;
-}
-@font-face {
-  font-family: "Atkinson Hyperlegible Next";
-  src: url("/fonts/AtkinsonHyperlegibleNext-MediumItalic.woff2") format("woff2");
-  font-weight: 500;
-  font-style: italic;
-  font-display: swap;
-}
-@font-face {
-  font-family: "Atkinson Hyperlegible Next";
-  src: url("/fonts/AtkinsonHyperlegibleNext-SemiBold.woff2") format("woff2");
-  font-weight: 600;
-  font-style: normal;
-  font-display: swap;
-}
-@font-face {
-  font-family: "Atkinson Hyperlegible Next";
-  src: url("/fonts/AtkinsonHyperlegibleNext-SemiBoldItalic.woff2") format("woff2");
-  font-weight: 600;
-  font-style: italic;
-  font-display: swap;
-}
-@font-face {
-  font-family: "Atkinson Hyperlegible Next";
-  src: url("/fonts/AtkinsonHyperlegibleNext-Bold.woff2") format("woff2");
-  font-weight: 700;
-  font-style: normal;
-  font-display: swap;
-}
-@font-face {
-  font-family: "Atkinson Hyperlegible Next";
-  src: url("/fonts/AtkinsonHyperlegibleNext-BoldItalic.woff2") format("woff2");
-  font-weight: 700;
-  font-style: italic;
-  font-display: swap;
-}
-@font-face {
-  font-family: "Atkinson Hyperlegible Next";
-  src: url("/fonts/AtkinsonHyperlegibleNext-ExtraBold.woff2") format("woff2");
-  font-weight: 800;
-  font-style: normal;
-  font-display: swap;
-}
-@font-face {
-  font-family: "Atkinson Hyperlegible Next";
-  src: url("/fonts/AtkinsonHyperlegibleNext-ExtraBoldItalic.woff2") format("woff2");
-  font-weight: 800;
-  font-style: italic;
-  font-display: swap;
-}
+/* =============================================================================
+   Finito — Asana clone token layer
+   Values measured from live app.asana.com (see docs/asana-teardown.md).
+   Body font = system stack (Asana ships no body webfont). Degular is kept only
+   for the auth hero + the "Finito" wordmark (--font-display); Atkinson is gone.
+   ========================================================================== */
 
-/* ---- Degular Display (auth headings / hero wordmark) ---- */
+/* ---- Degular Display (auth hero / Finito wordmark only) ---- */
 @font-face {
   font-family: "Degular Display";
   src: url("/fonts/DegularDisplay-Regular.woff2") format("woff2");
@@ -132,62 +39,12 @@
   font-display: swap;
 }
 
-/* ---- Atkinson Hyperlegible Mono (headings) ---- */
-@font-face {
-  font-family: "Atkinson Hyperlegible Mono";
-  src: url("/fonts/AtkinsonHyperlegibleMono-Regular.woff2") format("woff2");
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-}
-@font-face {
-  font-family: "Atkinson Hyperlegible Mono";
-  src: url("/fonts/AtkinsonHyperlegibleMono-Medium.woff2") format("woff2");
-  font-weight: 500;
-  font-style: normal;
-  font-display: swap;
-}
-@font-face {
-  font-family: "Atkinson Hyperlegible Mono";
-  src: url("/fonts/AtkinsonHyperlegibleMono-SemiBold.woff2") format("woff2");
-  font-weight: 600;
-  font-style: normal;
-  font-display: swap;
-}
-@font-face {
-  font-family: "Atkinson Hyperlegible Mono";
-  src: url("/fonts/AtkinsonHyperlegibleMono-Bold.woff2") format("woff2");
-  font-weight: 700;
-  font-style: normal;
-  font-display: swap;
-}
-@font-face {
-  font-family: "Atkinson Hyperlegible Mono";
-  src: url("/fonts/AtkinsonHyperlegibleMono-BoldItalic.woff2") format("woff2");
-  font-weight: 700;
-  font-style: italic;
-  font-display: swap;
-}
-@font-face {
-  font-family: "Atkinson Hyperlegible Mono";
-  src: url("/fonts/AtkinsonHyperlegibleMono-ExtraBold.woff2") format("woff2");
-  font-weight: 800;
-  font-style: normal;
-  font-display: swap;
-}
-@font-face {
-  font-family: "Atkinson Hyperlegible Mono";
-  src: url("/fonts/AtkinsonHyperlegibleMono-ExtraBoldItalic.woff2") format("woff2");
-  font-weight: 800;
-  font-style: italic;
-  font-display: swap;
-}
-
 :root {
-  --font-sans: "Atkinson Hyperlegible Next", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
-  --font-heading: "Atkinson Hyperlegible Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
-  --font-mono: "Atkinson Hyperlegible Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
-  --font-display: "Degular Display", "Atkinson Hyperlegible Next", sans-serif;
+  /* Asana uses the platform system stack for all UI text (measured). */
+  --font-sans: -apple-system, system-ui, "Segoe UI", Roboto, "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --font-heading: var(--font-sans);
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --font-display: "Degular Display", var(--font-sans);
 
   /* Weights */
   --weight-regular: 400;
@@ -195,12 +52,12 @@
   --weight-semibold: 600;
   --weight-bold: 700;
 
-  /* Font sizes (compact, UI-dense scale) */
+  /* Font sizes (Asana base = 14px; compact UI scale) */
   --text-2xs: 10px;
   --text-xs: 11px;
   --text-sm: 13px;
   --text-base: 14px;
-  --text-md: 16px;
+  --text-md: 16px;   /* Asana section header */
   --text-lg: 20px;
   --text-xl: 24px;
   --text-2xl: 30px;
@@ -219,7 +76,7 @@
   --tracking-wide: 0.16em;
   --tracking-wider: 0.6px;
 
-  /* Spacing scale (4px base) */
+  /* Spacing scale (4px base — matches Asana --box-spacing-*) */
   --space-0: 0;
   --space-1: 4px;
   --space-2: 8px;
@@ -232,84 +89,106 @@
   --space-12: 48px;
   --space-16: 64px;
 
-  /* Radii */
+  /* Radii — Asana: 4px pills / 6px buttons+tabs, tight panels */
   --radius-xs: 4px;
-  --radius-sm: 8px;
-  --radius-md: 10px;
-  --radius-lg: 12px;
-  --radius-xl: 16px;
-  --radius-2xl: 24px;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 8px;
+  --radius-xl: 12px;
+  --radius-2xl: 16px;
   --radius-full: 9999px;
 
-  /* Focus ring + selection */
-  --ring-primary: 0 0 0 4px rgba(102, 0, 255, 0.1);
-  --selection-bg: rgba(102, 0, 255, 0.15);
+  /* Focus ring + selection (Asana action blue) */
+  --ring-primary: 0 0 0 2px rgba(44, 96, 184, 0.4);
+  --selection-bg: rgba(44, 96, 184, 0.14);
 
-  /* Motion */
+  /* Motion (measured Asana durations; standard transition is 0.2s ease) */
   --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-asana: ease;
   --ease-linear: linear;
-  --duration-fast: 120ms;
-  --duration-base: 180ms;
-  --duration-slow: 260ms;
+  --duration-fast: 100ms;        /* exit-small */
+  --duration-base: 150ms;        /* enter-small */
+  --duration-slow: 300ms;        /* enter-large / drawer-open */
+  --duration-pane-open: 500ms;   /* task-pane open (deliberately slow) */
+  --duration-pane-close: 200ms;
 
   color-scheme: light;
 
-  /* Brand / primary */
-  --primary: #6600ff;
-  --primary-main: #6600ff;
-  --primary-light: #efe6ff;
-  --primary-soft: #f7f2ff;
-  --primary-dark: #5200cc;
+  /* Primary = Asana action blue (links, primary buttons, active/selected) */
+  --primary: #2c60b8;
+  --primary-main: #2c60b8;
+  --primary-light: #e7eefb;
+  --primary-soft: #f3f7fd;
+  --primary-dark: #1b4da0;
   --primary-contrast: #ffffff;
 
-  /* Secondary accent, used sparingly */
-  --secondary-main: #bf5af2;
-  --secondary-light: #f7ebfd;
-  --secondary-dark: #8e24c9;
+  /* Brand coral = Asana signature, used sparingly (Create button, logo, AI) */
+  --brand: #ff584a;
+  --brand-hover: #fc4136;
+  --brand-active: #f32822;
+  --brand-weak: #ffe4e0;
+  --brand-contrast: #ffffff;
+
+  /* Secondary accent (purple), used sparingly */
+  --secondary-main: #7a4ff2;
+  --secondary-light: #efeafe;
+  --secondary-dark: #5f27c9;
   --secondary-contrast: #ffffff;
 
-  /* Apple-style semantic colours */
-  --success-main: #34c759;
-  --success-light: #e6f8eb;
-  --success-dark: #1f8a3d;
+  /* Semantic colours (measured) */
+  --success-main: #46a75a;
+  --success-light: #d7fed8;
+  --success-dark: #3b8f4c;
+  --success-border: #6fca7f;
   --success-contrast: #ffffff;
 
-  --warning-main: #ff9500;
-  --warning-light: #fff3e0;
-  --warning-dark: #c25e00;
-  --warning-contrast: #1d1d1f;
+  --warning-main: #e9c300;
+  --warning-light: #fff4cc;
+  --warning-dark: #c9a800;
+  --warning-contrast: #050505;
 
-  --error-main: #ff3b30;
-  --error-light: #ffe9e7;
-  --error-dark: #c62e25;
+  --error-main: #e22923;
+  --error-light: #ffe4e0;
+  --error-dark: #be241e;
+  --error-border: #ff998b;
   --error-contrast: #ffffff;
 
-  --info-main: #0a84ff;
-  --info-light: #e5f1ff;
-  --info-dark: #0860c4;
+  --info-main: #2c60b8;
+  --info-light: #e7eefb;
+  --info-dark: #1b4da0;
   --info-contrast: #ffffff;
 
-  /* Neutral system */
-  --background-default: #f5f5f7;
-  --background-paper: #ffffff;
-  --surface-muted: #f5f5f7;
-  --surface-subtle: #ededf0;
-  --outline: rgba(29, 29, 31, 0.13);
-  --outline-soft: rgba(29, 29, 31, 0.09);
+  /* Neutral system (measured light) */
+  --background-default: #f3f3f3;  /* canvas */
+  --background-paper: #ffffff;    /* card / surface-weak */
+  --surface-muted: #f3f3f3;
+  --surface-subtle: #eaeaea;      /* surface-strong */
+  --outline: #eaeaea;             /* border */
+  --outline-soft: #f0f0f0;
+  --outline-hover: #c6c6c6;
+  --outline-strong: #e1e1e1;
 
-  --text-primary: #1d1d1f;
-  --text-secondary: rgba(29, 29, 31, 0.75);
-  --text-muted: rgba(29, 29, 31, 0.6);
-  --text-disabled: rgba(29, 29, 31, 0.44);
+  /* App shell (Asana: rail + sidebar sit on their own surface) */
+  --rail-bg: #ffffff;
+  --sidebar-bg: #ffffff;
+  --topbar-bg: #ffffff;
+  --topbar-height: 48px;
+  --rail-width: 64px;
+  --sidebar-width: 240px;
+
+  --text-primary: #050505;
+  --text-secondary: #636363;      /* text-weak */
+  --text-muted: #767676;
+  --text-disabled: #aaaaaa;
 
   --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.04);
   --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
   --shadow-soft: 0 2px 8px rgba(0, 0, 0, 0.04), 0 8px 24px rgba(0, 0, 0, 0.06);
-  --shadow-card: 0 2px 24px rgba(0, 0, 0, 0.06), 0 24px 80px rgba(0, 0, 0, 0.08);
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.04), 0 8px 32px rgba(0, 0, 0, 0.08);
   --shadow-popover: 0 8px 32px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.06);
-  --shadow-brand: 0 8px 24px rgba(102, 0, 255, 0.12);
+  --shadow-brand: 0 1px 3px rgba(255, 88, 74, 0.3);
 
-  /* Auth card (mirrors Finito Figma mock-ups) */
+  /* Auth card (mirrors Finito Figma mock-ups — intentionally untouched) */
   --auth-card-bg: #f5f5f5;
   --auth-card-border: #777777;
   --auth-input-bg: #fafafa;
@@ -331,58 +210,76 @@
 :root[data-theme="dark"] {
   color-scheme: dark;
 
-  --primary: #6600ff;
-  --primary-main: #7f33ff;
-  --primary-light: rgba(127, 51, 255, 0.22);
-  --primary-soft: rgba(127, 51, 255, 0.12);
-  --primary-dark: #cfa9ff;
+  /* Primary = Asana action blue (dark) */
+  --primary: #6ca0f8;
+  --primary-main: #4075cf;
+  --primary-light: rgba(108, 160, 248, 0.18);
+  --primary-soft: rgba(108, 160, 248, 0.10);
+  --primary-dark: #8fb8fa;
   --primary-contrast: #ffffff;
 
-  --secondary-main: #da8fff;
-  --secondary-light: rgba(218, 143, 255, 0.18);
-  --secondary-dark: #e9c1ff;
+  --brand: #ff584a;
+  --brand-hover: #fc4136;
+  --brand-active: #f32822;
+  --brand-weak: rgba(255, 88, 74, 0.18);
+  --brand-contrast: #ffffff;
+
+  --secondary-main: #a492fa;
+  --secondary-light: rgba(164, 146, 250, 0.18);
+  --secondary-dark: #c4b6fc;
   --secondary-contrast: #1d1d1f;
 
-  --success-main: #30d158;
-  --success-light: rgba(48, 209, 88, 0.16);
-  --success-dark: #7ee29a;
+  --success-main: #6fca7f;
+  --success-light: rgba(111, 202, 127, 0.18);
+  --success-dark: #abf2b5;
+  --success-border: #46a75a;
   --success-contrast: #0c2913;
 
-  --warning-main: #ff9f0a;
-  --warning-light: rgba(255, 159, 10, 0.16);
-  --warning-dark: #ffc169;
+  --warning-main: #e9c300;
+  --warning-light: rgba(233, 195, 0, 0.18);
+  --warning-dark: #ffe06a;
   --warning-contrast: #2b1c02;
 
-  --error-main: #ff453a;
-  --error-light: rgba(255, 69, 58, 0.16);
-  --error-dark: #ff8a80;
+  --error-main: #ff6a5e;
+  --error-light: rgba(255, 106, 94, 0.18);
+  --error-dark: #ff998b;
+  --error-border: #ff998b;
   --error-contrast: #2b0805;
 
-  --info-main: #0a84ff;
-  --info-light: rgba(10, 132, 255, 0.16);
-  --info-dark: #7cc0ff;
-  --info-contrast: #04182b;
+  --info-main: #6ca0f8;
+  --info-light: rgba(108, 160, 248, 0.18);
+  --info-dark: #4075cf;
+  --info-contrast: #ffffff;
 
-  --background-default: #121212;
-  --background-paper: #1c1c1e;
-  --surface-muted: #232326;
-  --surface-subtle: #2c2c30;
-  --outline: rgba(255, 255, 255, 0.14);
-  --outline-soft: rgba(255, 255, 255, 0.09);
+  /* Neutral system (measured dark) */
+  --background-default: #262626;  /* canvas */
+  --background-paper: #1e1e1e;    /* card / surface-weak (darker than canvas, as Asana) */
+  --surface-muted: #262626;
+  --surface-subtle: #2b2b2b;      /* surface-strong */
+  --outline: #333333;             /* border */
+  --outline-soft: #2b2b2b;
+  --outline-hover: #505050;
+  --outline-strong: #424242;
 
-  --text-primary: rgba(255, 255, 255, 0.92);
-  --text-secondary: rgba(255, 255, 255, 0.74);
-  --text-muted: rgba(255, 255, 255, 0.54);
-  --text-disabled: rgba(255, 255, 255, 0.38);
+  /* App shell (Asana dark: rail/sidebar are the darkest surface) */
+  --rail-bg: #161616;
+  --sidebar-bg: #161616;
+  --topbar-bg: #161616;
+
+  --text-primary: #f3f3f3;
+  --text-secondary: #a0a0a0;      /* text-weak */
+  --text-muted: #8a8a8a;
+  --text-disabled: #636363;
 
   --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.2);
   --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3), 0 1px 2px rgba(0, 0, 0, 0.2);
   --shadow-soft: 0 2px 8px rgba(0, 0, 0, 0.2), 0 8px 24px rgba(0, 0, 0, 0.3);
-  --shadow-card: 0 2px 24px rgba(0, 0, 0, 0.3), 0 24px 80px rgba(0, 0, 0, 0.5);
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 32px rgba(0, 0, 0, 0.45);
   --shadow-popover: 0 8px 32px rgba(0, 0, 0, 0.5), 0 2px 8px rgba(0, 0, 0, 0.3);
-  --shadow-brand: 0 8px 24px rgba(127, 51, 255, 0.2);
+  --shadow-brand: 0 1px 3px rgba(255, 88, 74, 0.4);
 
-  --selection-bg: rgba(127, 51, 255, 0.3);
+  --selection-bg: rgba(108, 160, 248, 0.26);
+  --ring-primary: 0 0 0 2px rgba(108, 160, 248, 0.5);
 
   --auth-card-bg: #2c2c2c;
   --auth-card-border: #777777;
@@ -401,19 +298,23 @@ body {
   min-width: 320px;
   min-height: 100vh;
   font-family: var(--font-sans);
+  font-size: var(--text-base);
   background: var(--background-default);
   color: var(--text-primary);
 }
 
-/* Headings use Atkinson Hyperlegible Mono, semibold */
-h1,
-h2,
-h3,
-h4,
-h5,
-h6 {
-  font-family: var(--font-heading);
-  font-weight: var(--weight-semibold);
+/* Headings use the system stack (Asana has no mono headings). In @layer base
+   so Tailwind weight utilities (e.g. font-medium) can override per element. */
+@layer base {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: var(--font-heading);
+    font-weight: var(--weight-semibold);
+  }
 }
 
 /* In a layer so Tailwind text and font utilities win on form controls.
@@ -451,4 +352,30 @@ textarea {
 input::placeholder,
 textarea::placeholder {
   color: var(--text-muted);
+}
+
+/* Task detail pane slide-in (Asana: ~0.5s open) */
+@keyframes finito-pane-in {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+@keyframes finito-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Task-completion celebration (Asana rainbow confetti + a flying friend) */
+@keyframes finito-confetti {
+  0% { transform: translateY(0) translateX(0) rotate(var(--finito-spin)); opacity: 1; }
+  100% { transform: translateY(106vh) translateX(var(--finito-drift)) rotate(calc(var(--finito-spin) + 720deg)); opacity: 0.85; }
+}
+@keyframes finito-creature {
+  0% { transform: translateX(0) translateY(0) rotate(-8deg); opacity: 0; }
+  12% { opacity: 1; }
+  88% { opacity: 1; }
+  100% { transform: translateX(124vw) translateY(-32px) rotate(10deg); opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  [style*="finito-confetti"],
+  [style*="finito-creature"] { animation: none !important; }
 }

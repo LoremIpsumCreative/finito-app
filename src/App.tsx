@@ -5,7 +5,9 @@ import { supabase } from './lib/supabase'
 import type { ActivityLog, Section, Task, TaskComment, TaskDependency, Workspace } from './types'
 import { difficultyOptions, priorityOptions, statusOptions } from './constants'
 import { formatDate, getLabel, isTaskOverdue } from './utils'
-import { DashboardStats } from './components/DashboardStats'
+import { IconRail } from './components/IconRail'
+import { ViewTabs } from './components/ViewTabs'
+import { CompletionCelebration } from './components/CompletionCelebration'
 import { TaskFilters } from './components/TaskFilters'
 import { CreateTaskForm } from './components/CreateTaskForm'
 import { TaskList } from './components/TaskList'
@@ -25,6 +27,12 @@ function App() {
   const [session, setSession] = useState<Session | null>(null)
   const [authReady, setAuthReady] = useState(false)
   const [tasks, setTasks] = useState<Task[]>([])
+  // Bumped each time a task transitions to done, to fire the completion celebration.
+  const [celebrate, setCelebrate] = useState(0)
+  // Cosmetic star toggle in the project header (Asana parity).
+  const [projectStarred, setProjectStarred] = useState(false)
+  // Hamburger collapses the project sidebar (Asana parity).
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [sections, setSections] = useState<Section[]>([])
   const [dependencies, setDependencies] = useState<TaskDependency[]>([])
   const [comments, setComments] = useState<TaskComment[]>([])
@@ -313,7 +321,7 @@ function App() {
 
     const { data, error } = await supabase
       .from('tasks')
-      .select('id, title, description, parent_task_id, status, priority, difficulty, start_date, due_date, archived_at, section_id, position')
+      .select('id, title, description, parent_task_id, status, priority, difficulty, start_date, due_date, archived_at, section_id, assignee_id, position')
       .eq('project_id', project.id)
       .order('position', { ascending: true })
 
@@ -518,6 +526,10 @@ function App() {
       currentTasks.map((task) => (task.id === taskId ? { ...task, status } : task)),
     )
 
+    if (status === 'done' && updatedTask?.status !== 'done') {
+      setCelebrate((count) => count + 1)
+    }
+
     await logActivity(
       'Updated task status',
       `${updatedTask?.title ?? 'Task'} → ${getLabel(statusOptions, status)}`,
@@ -653,6 +665,22 @@ function App() {
       currentTasks.map((task) => (task.id === taskId ? { ...task, section_id: nextSectionId } : task)),
     )
     setUpdatingSectionTaskId(null)
+  }
+
+  // Self-assign toggle (Finito is single-user, so the assignee is the owner or no one).
+  async function updateTaskAssignee(taskId: string, assigneeId: string | null) {
+    setErrorMessage(null)
+
+    const { error } = await supabase.from('tasks').update({ assignee_id: assigneeId }).eq('id', taskId)
+
+    if (error) {
+      setErrorMessage(error.message)
+      return
+    }
+
+    setTasks((currentTasks) =>
+      currentTasks.map((task) => (task.id === taskId ? { ...task, assignee_id: assigneeId } : task)),
+    )
   }
 
   // ---- Section management (Asana-style: sections are first-class) ----
@@ -1094,7 +1122,7 @@ function App() {
         archived_at: null,
         position: siblingSubtasks.length + 1,
       })
-      .select('id, title, description, parent_task_id, status, priority, difficulty, start_date, due_date, archived_at, section_id, position')
+      .select('id, title, description, parent_task_id, status, priority, difficulty, start_date, due_date, archived_at, section_id, assignee_id, position')
       .single()
 
     if (error) {
@@ -1522,6 +1550,10 @@ function App() {
     return <AuthScreen />
   }
 
+  const currentWorkspaceName = workspaces.find((w) => w.id === workspaceId)?.name ?? 'Tasks'
+  const currentUserId = session?.user.id ?? null
+  const currentUserInitials = (session?.user.email ?? '?').slice(0, 2).toUpperCase()
+
   const workspacesIcon = <Icon name="workspaces" className="h-[22px] w-[22px]" />
   const activityIcon = <Icon name="activity" className="h-[22px] w-[22px]" />
   const settingsIcon = <Icon name="settings" className="h-[22px] w-[22px]" />
@@ -1532,15 +1564,93 @@ function App() {
   ]
 
   return (
-    <main className="min-h-screen bg-[var(--surface-muted)] text-[var(--text-primary)]">
+    <div className="flex h-screen flex-col bg-[var(--background-default)] text-[var(--text-primary)]">
       <AppHeader
-        viewMode={viewMode}
-        setViewMode={setViewMode}
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
+        onNewTask={toggleCreateTaskForm}
+        onToggleSidebar={() => setSidebarCollapsed((value) => !value)}
       />
 
-      <section className="mx-auto max-w-[1600px] px-4 pb-24 sm:px-5 lg:pb-5">
+      <div className="flex min-h-0 flex-1">
+        <IconRail
+          activeTool={sidebarTool}
+          setActiveTool={setSidebarTool}
+          onOpenSettings={() => setIsSettingsOpen(true)}
+          signOut={signOut}
+          userEmail={session.user.email ?? ''}
+        />
+
+        {!sidebarCollapsed && (
+          <WorkspaceSidebar
+            activityLogs={activityLogs}
+            workspaces={workspaces}
+            currentWorkspaceId={workspaceId}
+            newWorkspaceName={newWorkspaceName}
+            setNewWorkspaceName={setNewWorkspaceName}
+            creatingWorkspace={creatingWorkspace}
+            createWorkspace={createWorkspace}
+            switchWorkspace={switchWorkspace}
+            activeTool={sidebarTool}
+          />
+        )}
+
+        <div className="flex min-h-0 flex-1 flex-col bg-[var(--background-paper)]">
+          <div className="flex shrink-0 items-center justify-between gap-3 border-b border-[var(--outline)] px-4 py-2">
+            <div className="flex min-w-0 items-center gap-2">
+              <span
+                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-[var(--radius-md)] text-[13px] font-semibold text-[var(--primary-contrast)]"
+                style={{ background: 'var(--primary-main)' }}
+                aria-hidden="true"
+              >
+                {currentWorkspaceName.slice(0, 1).toUpperCase()}
+              </span>
+              <h1 className="truncate text-[20px] font-medium text-[var(--text-primary)]">{currentWorkspaceName}</h1>
+              <button
+                type="button"
+                onClick={() => setProjectStarred((value) => !value)}
+                aria-label={projectStarred ? 'Unstar' : 'Star'}
+                className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-[var(--radius-sm)] transition-colors hover:bg-[var(--background-hover)] ${
+                  projectStarred ? 'text-[var(--warning-main)]' : 'text-[var(--text-muted)]'
+                }`}
+              >
+                <svg viewBox="0 0 24 24" fill={projectStarred ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
+                  <path d="M12 17.75l-6.172 3.245l1.179 -6.873l-5 -4.867l6.9 -1l3.086 -6.253l3.086 6.253l6.9 1l-5 4.867l1.179 6.873z" />
+                </svg>
+              </button>
+              <span className="ml-1 shrink-0 text-[13px] text-[var(--text-muted)]">{stats.visible} tasks</span>
+            </div>
+
+            <div className="flex shrink-0 items-center gap-2">
+              <span
+                className="flex h-7 w-7 items-center justify-center rounded-full bg-[var(--primary-main)] text-[11px] font-semibold text-[var(--primary-contrast)]"
+                title={session.user.email ?? ''}
+                aria-hidden="true"
+              >
+                {(session.user.email ?? '?').slice(0, 2).toUpperCase()}
+              </span>
+              <button
+                type="button"
+                className="flex h-8 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--primary-main)] px-3 text-[13px] font-medium text-[var(--primary-contrast)] transition-colors hover:bg-[var(--primary-dark)]"
+              >
+                <Icon name="profile" className="h-4 w-4" />
+                Share
+              </button>
+              <button
+                type="button"
+                className="flex h-8 items-center gap-1.5 rounded-[var(--radius-md)] border border-[var(--outline)] px-3 text-[13px] font-medium text-[var(--text-secondary)] transition-colors hover:bg-[var(--background-hover)]"
+              >
+                <Icon name="settings" className="h-4 w-4" />
+                Customize
+              </button>
+            </div>
+          </div>
+
+          <div className="flex shrink-0 items-center gap-4 border-b border-[var(--outline)] px-4">
+            <ViewTabs viewMode={viewMode} setViewMode={setViewMode} />
+          </div>
+
+          <div className="min-h-0 flex-1 overflow-auto px-4 py-4">
 
         <CreateTaskForm
           isOpen={isCreateTaskFormOpen}
@@ -1600,27 +1710,6 @@ function App() {
 
 
 
-        <div className="mb-4 grid items-stretch gap-4 lg:grid-cols-[240px_minmax(0,1fr)]">
-          <div className="hidden lg:block">
-            <WorkspaceSidebar
-              activityLogs={activityLogs}
-              workspaces={workspaces}
-              currentWorkspaceId={workspaceId}
-              newWorkspaceName={newWorkspaceName}
-              setNewWorkspaceName={setNewWorkspaceName}
-              creatingWorkspace={creatingWorkspace}
-              createWorkspace={createWorkspace}
-              switchWorkspace={switchWorkspace}
-              activeTool={sidebarTool}
-              setActiveTool={setSidebarTool}
-              onOpenSettings={() => setIsSettingsOpen(true)}
-              signOut={signOut}
-            />
-          </div>
-
-          <div className="min-w-0 space-y-4">
-          <DashboardStats stats={stats} onNewTaskClick={toggleCreateTaskForm} />
-
           {viewMode === 'calendar' ? (
             <CalendarView
               tasks={groupedTasks.flatMap((group) => group.tasks)}
@@ -1651,6 +1740,9 @@ function App() {
             updateTaskPriority={updateTaskPriority}
             updateTaskDifficulty={updateTaskDifficulty}
             updateTaskSection={updateTaskSection}
+            updateTaskAssignee={updateTaskAssignee}
+            currentUserId={currentUserId}
+            currentUserInitials={currentUserInitials}
             moveTaskToGroup={moveTaskToGroup}
             addTaskToGroup={addTaskToGroup}
             createSection={createSection}
@@ -1667,8 +1759,6 @@ function App() {
             setGroupBy={setGroupBy}
           />
           )}
-          </div>
-
           {selectedTask ? (
             <TaskDetailDrawer
               selectedTask={selectedTask}
@@ -1680,6 +1770,9 @@ function App() {
               updateTaskPriority={updateTaskPriority}
               updatingSectionTaskId={updatingSectionTaskId}
               updateTaskSection={updateTaskSection}
+              updateTaskAssignee={updateTaskAssignee}
+              currentUserId={currentUserId}
+              currentUserInitials={currentUserInitials}
               getSubtasks={getSubtasks}
               deletingTaskId={deletingTaskId}
               deleteTask={deleteTask}
@@ -1729,8 +1822,9 @@ function App() {
               restoreTask={restoreTask}
             />
           ) : null}
+          </div>
         </div>
-      </section>
+      </div>
 
       {/* Mobile sheet for sidebar tools */}
       {isMobileSheetOpen && (
@@ -1756,13 +1850,7 @@ function App() {
                 setIsMobileSheetOpen(false)
               }}
               activeTool={sidebarTool}
-              setActiveTool={setSidebarTool}
-              onOpenSettings={() => {
-                setIsMobileSheetOpen(false)
-                setIsSettingsOpen(true)
-              }}
-              signOut={signOut}
-              sticky={false}
+              embedded
             />
           </div>
         </div>
@@ -1815,6 +1903,8 @@ function App() {
         </button>
       </nav>
 
+      <CompletionCelebration trigger={celebrate} />
+
       <SettingsModal
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}
@@ -1823,7 +1913,7 @@ function App() {
         setTheme={setTheme}
         signOut={signOut}
       />
-    </main>
+    </div>
   )
 }
 

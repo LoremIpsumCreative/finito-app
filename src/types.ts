@@ -15,6 +15,7 @@ export type Task = {
   due_date: string | null
   archived_at?: string | null
   section_id: string | null
+  assignee_id: string | null
   position: number | null
 }
 
