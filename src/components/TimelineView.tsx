@@ -2,7 +2,6 @@ import type { Task } from '../types'
 import { getLabel } from '../utils'
 import { statusOptions } from '../constants'
 import { statusToneClass, SubtaskProgress } from './ui'
-import { Icon } from './icons'
 
 type TimelineViewProps = {
   tasks: Task[]
@@ -58,9 +57,9 @@ export function TimelineView({ tasks, getSubtasks, selectedTaskId, onOpenTask }:
 
   if (dated.length === 0) {
     return (
-      <section className="rounded-xl border border-[var(--outline-soft)] bg-[var(--background-paper)] px-4 py-10 text-center shadow-sm">
-        <p className="text-sm text-[var(--text-muted)]">No tasks with start or due dates to place on the timeline.</p>
-      </section>
+      <div className="px-4 py-10 text-center">
+        <p className="text-[14px] text-[var(--text-muted)]">No tasks with start or due dates to place on the timeline.</p>
+      </div>
     )
   }
 
@@ -85,25 +84,19 @@ export function TimelineView({ tasks, getSubtasks, selectedTaskId, onOpenTask }:
   const showToday = todayLeft >= 0 && todayLeft <= 100
 
   return (
-    <section className="overflow-hidden rounded-xl border border-[var(--outline-soft)] bg-[var(--background-paper)] shadow-sm">
-      <div className="border-b border-[var(--outline-soft)] px-4 py-3">
-        <h2 className="text-[13px] font-semibold text-[var(--text-primary)]">Timeline</h2>
-        <p className="text-xs text-[var(--text-muted)]">Tasks spanning their start and due dates.</p>
-      </div>
-
+    <div className="overflow-hidden rounded-[var(--radius-md)] border border-[var(--outline)]">
       <div className="overflow-x-auto">
         <div className="min-w-[760px]">
           {/* Axis */}
-          <div className="grid grid-cols-[240px_1fr] border-b border-[var(--outline-soft)] bg-[var(--surface-muted)]">
-            <div className="flex items-center gap-1.5 border-r border-[var(--outline-soft)] px-4 py-2 text-[13px] font-medium text-[var(--text-muted)]">
-              <Icon name="subtask" className="h-3.5 w-3.5 text-[var(--text-disabled)]" />
+          <div className="grid grid-cols-[240px_1fr] border-b border-[var(--outline)]">
+            <div className="flex items-center border-r border-[var(--outline)] px-3 py-2 text-[13px] text-[var(--text-muted)]">
               Task
             </div>
             <div className="relative h-8">
               {ticks.map((tick, index) => (
                 <div
                   key={index}
-                  className="absolute top-0 flex h-full -translate-x-1/2 items-center text-[10px] font-medium text-[var(--text-muted)]"
+                  className="absolute top-0 flex h-full -translate-x-1/2 items-center text-[11px] text-[var(--text-muted)]"
                   style={{ left: `${tick.left}%` }}
                 >
                   {formatTick(tick.date)}
@@ -116,7 +109,7 @@ export function TimelineView({ tasks, getSubtasks, selectedTaskId, onOpenTask }:
           <div className="relative">
             {showToday && (
               <div
-                className="pointer-events-none absolute bottom-0 top-0 z-10 w-px bg-[var(--primary-main)]/60"
+                className="pointer-events-none absolute bottom-0 top-0 z-10 w-px bg-[var(--primary)]"
                 style={{ left: `calc(240px + (100% - 240px) * ${todayLeft / 100})` }}
               />
             )}
@@ -128,13 +121,13 @@ export function TimelineView({ tasks, getSubtasks, selectedTaskId, onOpenTask }:
               const doneSubtasks = subtasks.filter((subtask) => subtask.status === 'done').length
 
               return (
-                <div key={task.id} className="grid grid-cols-[240px_1fr] items-center border-b border-[var(--outline-soft)]">
-                  <div className="min-w-0 border-r border-[var(--outline-soft)] px-4 py-2.5">
-                    <p className="truncate text-[13px] font-medium text-[var(--text-primary)]" title={task.title}>
+                <div key={task.id} className="grid grid-cols-[240px_1fr] items-center border-b border-[var(--outline-soft)] transition-colors hover:bg-[var(--background-hover)]">
+                  <div className="min-w-0 border-r border-[var(--outline)] px-3 py-2">
+                    <p className="truncate text-[13px] text-[var(--text-primary)]" title={task.title}>
                       {task.title}
                     </p>
                     <div className="mt-1 flex items-center gap-2">
-                      <span className={`inline-flex shrink-0 items-center rounded-full border px-1.5 py-0.5 text-[10px] font-semibold ${statusToneClass(task.status)}`}>
+                      <span className={`inline-flex shrink-0 items-center rounded-[var(--radius-full)] border px-1.5 py-0.5 text-[10px] font-medium ${statusToneClass(task.status)}`}>
                         {getLabel(statusOptions, task.status)}
                       </span>
                       {subtasks.length > 0 && (
@@ -146,13 +139,13 @@ export function TimelineView({ tasks, getSubtasks, selectedTaskId, onOpenTask }:
                     <button
                       type="button"
                       onClick={() => onOpenTask(task.id)}
-                      className={`absolute top-1/2 flex h-5 -translate-y-1/2 items-center overflow-hidden rounded-full px-2 text-[10px] font-semibold text-white transition hover:opacity-90 ${barTone(task, end, today)} ${
-                        selectedTaskId === task.id ? 'ring-2 ring-[var(--primary-main)]/40' : ''
+                      className={`absolute top-1/2 flex h-6 -translate-y-1/2 items-center overflow-hidden rounded-[var(--radius-sm)] px-2 text-[11px] font-medium text-white transition hover:opacity-90 ${barTone(task, end, today)} ${
+                        selectedTaskId === task.id ? 'ring-2 ring-[var(--primary)]' : ''
                       }`}
-                      style={{ left: `${left}%`, width: `${width}%`, minWidth: '24px' }}
+                      style={{ left: `${left}%`, width: `${width}%`, minWidth: '28px' }}
                       title={`${task.title} · ${formatTick(start)} → ${formatTick(end)}`}
                     >
-                      <span className="truncate">{formatTick(start)} → {formatTick(end)}</span>
+                      <span className="truncate">{task.title}</span>
                     </button>
                   </div>
                 </div>
@@ -163,18 +156,16 @@ export function TimelineView({ tasks, getSubtasks, selectedTaskId, onOpenTask }:
       </div>
 
       {undated.length > 0 && (
-        <div className="border-t border-[var(--outline-soft)] px-4 py-3">
-          <p className="mb-2 text-[13px] font-bold uppercase tracking-[0.12em] text-[var(--text-muted)]">
-            No dates ({undated.length})
-          </p>
+        <div className="border-t border-[var(--outline)] px-3 py-3">
+          <p className="mb-2 text-[12px] text-[var(--text-muted)]">No dates ({undated.length})</p>
           <div className="flex flex-wrap gap-1.5">
             {undated.map((task) => (
               <button
                 key={task.id}
                 type="button"
                 onClick={() => onOpenTask(task.id)}
-                className={`rounded-full border border-[var(--outline)] bg-[var(--surface-muted)] px-3 py-1 text-xs font-medium text-[var(--text-secondary)] transition hover:bg-[var(--surface-subtle)] ${
-                  selectedTaskId === task.id ? 'ring-2 ring-[var(--primary-main)]/40' : ''
+                className={`rounded-[var(--radius-full)] border border-[var(--outline)] bg-[var(--surface-subtle)] px-3 py-1 text-[12px] text-[var(--text-secondary)] transition hover:bg-[var(--background-hover)] ${
+                  selectedTaskId === task.id ? 'ring-1 ring-[var(--primary)]' : ''
                 }`}
               >
                 {task.title}
@@ -183,6 +174,6 @@ export function TimelineView({ tasks, getSubtasks, selectedTaskId, onOpenTask }:
           </div>
         </div>
       )}
-    </section>
+    </div>
   )
 }

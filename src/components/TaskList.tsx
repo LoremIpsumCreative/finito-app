@@ -1028,7 +1028,7 @@ export function TaskList({
       )}
 
       {!isLoading && !errorMessage && viewMode === 'kanban' && (
-        <div className="flex gap-3 overflow-x-auto pb-2">
+        <div className="flex gap-4 overflow-x-auto pb-2">
           {groupedTasks.map((group) => (
             <section
               key={group.id}
@@ -1044,22 +1044,16 @@ export function TaskList({
                 setDragTaskId(null)
                 setDragOverGroup(null)
               }}
-              className={`flex w-72 shrink-0 flex-col rounded-2xl border bg-[var(--surface-muted)] transition ${
-                dragOverGroup === group.id
-                  ? 'border-[var(--primary-main)] ring-2 ring-[var(--primary-main)]/20'
-                  : 'border-[var(--outline-soft)]'
+              className={`flex w-[300px] shrink-0 flex-col gap-2 rounded-[var(--radius-md)] p-1 transition-colors ${
+                dragOverGroup === group.id ? 'bg-[var(--background-hover)]' : ''
               }`}
             >
-              <div className="flex items-center justify-between gap-2 border-b border-[var(--outline-soft)] px-3 py-2.5">
-                <h3 className="truncate text-[13px] font-bold uppercase tracking-[0.12em] text-[var(--text-secondary)]">
-                  {group.name}
-                </h3>
-                <span className="shrink-0 rounded-full bg-[var(--background-paper)] px-2 py-0.5 text-[11px] font-semibold text-[var(--text-muted)]">
-                  {group.tasks.length}
-                </span>
+              <div className="flex items-center gap-2 px-1.5 py-1">
+                <h3 className="truncate text-[15px] font-medium text-[var(--text-primary)]">{group.name}</h3>
+                <span className="shrink-0 text-[13px] text-[var(--text-muted)]">{group.tasks.length}</span>
               </div>
 
-              <div className="flex flex-1 flex-col gap-2 p-2">
+              <div className="flex flex-1 flex-col gap-2">
                 {group.tasks.map((task) => (
                   <div
                     key={task.id}
@@ -1070,8 +1064,8 @@ export function TaskList({
                       setDragOverGroup(null)
                     }}
                     onClick={() => onOpenTask(task.id)}
-                    className={`cursor-pointer overflow-hidden rounded-xl border bg-[var(--background-paper)] shadow-sm transition hover:shadow-md ${
-                      selectedTaskId === task.id ? 'border-[var(--primary-main)] ring-2 ring-[var(--primary-main)]/20' : 'border-[var(--outline-soft)]'
+                    className={`cursor-pointer overflow-hidden rounded-[var(--radius-md)] border bg-[var(--surface-subtle)] shadow-[var(--shadow-xs)] transition-shadow hover:shadow-[var(--shadow-sm)] ${
+                      selectedTaskId === task.id ? 'border-[var(--primary)] ring-1 ring-[var(--primary)]' : 'border-[var(--outline)]'
                     } ${dragTaskId === task.id ? 'opacity-50' : ''}`}
                   >
                     {renderTask(task)}
@@ -1079,7 +1073,7 @@ export function TaskList({
                 ))}
 
                 {group.tasks.length === 0 && (
-                  <p className="rounded-xl border border-dashed border-[var(--outline)] px-3 py-6 text-center text-xs text-[var(--text-muted)]">
+                  <p className="rounded-[var(--radius-md)] border border-dashed border-[var(--outline)] px-3 py-6 text-center text-[12px] text-[var(--text-muted)]">
                     Drop tasks here
                   </p>
                 )}

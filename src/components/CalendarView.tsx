@@ -24,15 +24,15 @@ function sameDay(a: Date, b: Date) {
 }
 
 function chipTone(task: Task, day: Date, today: Date) {
-  // Overdue (not done) always reads red; otherwise a calm neutral chip with a
-  // status dot carrying the colour, matching the other views.
+  // Overdue (not done) reads red; done reads green; otherwise a calm neutral
+  // chip with a status dot carrying the colour, matching the other views.
   if (task.status !== 'done' && day < today) {
     return 'bg-[var(--error-light)] text-[var(--error-dark)]'
   }
   if (task.status === 'done') {
     return 'bg-[var(--success-light)] text-[var(--success-dark)]'
   }
-  return 'bg-[var(--surface-muted)] text-[var(--text-secondary)]'
+  return 'bg-[var(--surface-subtle)] text-[var(--text-secondary)]'
 }
 
 export function CalendarView({ tasks, getSubtasks, selectedTaskId, onOpenTask }: CalendarViewProps) {
@@ -64,45 +64,35 @@ export function CalendarView({ tasks, getSubtasks, selectedTaskId, onOpenTask }:
     setViewMonth(new Date(today.getFullYear(), today.getMonth(), 1))
   }
 
+  const navBtn =
+    'flex h-8 w-8 items-center justify-center rounded-[var(--radius-sm)] text-[var(--text-secondary)] transition-colors hover:bg-[var(--background-hover)] hover:text-[var(--text-primary)]'
+
   return (
-    <section className="overflow-hidden rounded-xl border border-[var(--outline-soft)] bg-[var(--background-paper)] shadow-sm">
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--outline-soft)] px-4 py-3">
-        <div>
-          <h2 className="text-[13px] font-semibold text-[var(--text-primary)]">
-            {monthNames[month]} {year}
-          </h2>
-          <p className="text-xs text-[var(--text-muted)]">Tasks shown on their due date.</p>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <button
-            type="button"
-            onClick={() => setViewMonth(new Date(year, month - 1, 1))}
-            className="h-8 w-8 rounded-full border border-[var(--outline)] text-sm font-semibold text-[var(--text-secondary)] transition hover:bg-[var(--surface-muted)]"
-            aria-label="Previous month"
-          >
+    <div className="overflow-hidden rounded-[var(--radius-md)] border border-[var(--outline)]">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--outline)] px-3 py-2">
+        <h2 className="text-[16px] font-medium text-[var(--text-primary)]">
+          {monthNames[month]} {year}
+        </h2>
+        <div className="flex items-center gap-1">
+          <button type="button" onClick={() => setViewMonth(new Date(year, month - 1, 1))} className={navBtn} aria-label="Previous month">
             ‹
           </button>
           <button
             type="button"
             onClick={goToToday}
-            className="h-8 rounded-full border border-[var(--outline)] px-3 text-xs font-semibold text-[var(--text-secondary)] transition hover:bg-[var(--surface-muted)]"
+            className="h-8 rounded-[var(--radius-sm)] px-3 text-[13px] font-medium text-[var(--text-secondary)] transition-colors hover:bg-[var(--background-hover)] hover:text-[var(--text-primary)]"
           >
             Today
           </button>
-          <button
-            type="button"
-            onClick={() => setViewMonth(new Date(year, month + 1, 1))}
-            className="h-8 w-8 rounded-full border border-[var(--outline)] text-sm font-semibold text-[var(--text-secondary)] transition hover:bg-[var(--surface-muted)]"
-            aria-label="Next month"
-          >
+          <button type="button" onClick={() => setViewMonth(new Date(year, month + 1, 1))} className={navBtn} aria-label="Next month">
             ›
           </button>
         </div>
       </div>
 
-      <div className="grid grid-cols-7 border-b border-[var(--outline-soft)] bg-[var(--surface-muted)]">
+      <div className="grid grid-cols-7 border-b border-[var(--outline)]">
         {weekdays.map((weekday) => (
-          <div key={weekday} className="px-2 py-2 text-center text-[13px] font-bold uppercase tracking-[0.1em] text-[var(--text-muted)]">
+          <div key={weekday} className="px-2 py-1.5 text-center text-[12px] text-[var(--text-muted)]">
             {weekday}
           </div>
         ))}
@@ -118,14 +108,14 @@ export function CalendarView({ tasks, getSubtasks, selectedTaskId, onOpenTask }:
             <div
               key={index}
               className={`min-h-[104px] border-b border-r border-[var(--outline-soft)] p-1.5 ${
-                inMonth ? 'bg-[var(--background-paper)]' : 'bg-[var(--surface-muted)]'
+                inMonth ? '' : 'bg-[var(--surface-muted)]'
               } ${index % 7 === 6 ? 'border-r-0' : ''}`}
             >
               <div className="mb-1 flex justify-end">
                 <span
-                  className={`inline-flex h-6 w-6 items-center justify-center rounded-full text-xs font-semibold ${
+                  className={`inline-flex h-6 w-6 items-center justify-center rounded-full text-[12px] font-medium ${
                     isToday
-                      ? 'bg-[var(--primary-main)] text-white'
+                      ? 'bg-[var(--primary-main)] text-[var(--primary-contrast)]'
                       : inMonth
                         ? 'text-[var(--text-secondary)]'
                         : 'text-[var(--text-disabled)]'
@@ -145,8 +135,8 @@ export function CalendarView({ tasks, getSubtasks, selectedTaskId, onOpenTask }:
                       key={task.id}
                       type="button"
                       onClick={() => onOpenTask(task.id)}
-                      className={`block w-full rounded-md px-1.5 py-1 text-left transition ${chipTone(task, day, today)} ${
-                        selectedTaskId === task.id ? 'ring-2 ring-[var(--primary-main)]/40' : ''
+                      className={`block w-full rounded-[var(--radius-sm)] px-1.5 py-1 text-left transition ${chipTone(task, day, today)} ${
+                        selectedTaskId === task.id ? 'ring-1 ring-[var(--primary)]' : ''
                       }`}
                       title={task.title}
                     >
@@ -163,7 +153,7 @@ export function CalendarView({ tasks, getSubtasks, selectedTaskId, onOpenTask }:
                   )
                 })}
                 {dayTasks.length > 3 && (
-                  <p className="px-1.5 text-[10px] font-semibold text-[var(--text-muted)]">+{dayTasks.length - 3} more</p>
+                  <p className="px-1.5 text-[10px] font-medium text-[var(--text-muted)]">+{dayTasks.length - 3} more</p>
                 )}
               </div>
             </div>
@@ -172,18 +162,16 @@ export function CalendarView({ tasks, getSubtasks, selectedTaskId, onOpenTask }:
       </div>
 
       {unscheduled.length > 0 && (
-        <div className="border-t border-[var(--outline-soft)] px-4 py-3">
-          <p className="mb-2 text-[13px] font-bold uppercase tracking-[0.12em] text-[var(--text-muted)]">
-            No due date ({unscheduled.length})
-          </p>
+        <div className="border-t border-[var(--outline)] px-3 py-3">
+          <p className="mb-2 text-[12px] text-[var(--text-muted)]">No due date ({unscheduled.length})</p>
           <div className="flex flex-wrap gap-1.5">
             {unscheduled.map((task) => (
               <button
                 key={task.id}
                 type="button"
                 onClick={() => onOpenTask(task.id)}
-                className={`flex items-center gap-1.5 rounded-full border border-[var(--outline)] bg-[var(--surface-muted)] px-3 py-1 text-xs font-medium text-[var(--text-secondary)] transition hover:bg-[var(--surface-subtle)] ${
-                  selectedTaskId === task.id ? 'ring-2 ring-[var(--primary-main)]/40' : ''
+                className={`flex items-center gap-1.5 rounded-[var(--radius-full)] border border-[var(--outline)] bg-[var(--surface-subtle)] px-3 py-1 text-[12px] text-[var(--text-secondary)] transition hover:bg-[var(--background-hover)] ${
+                  selectedTaskId === task.id ? 'ring-1 ring-[var(--primary)]' : ''
                 }`}
               >
                 <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${statusDotClass(task.status)}`} />
@@ -193,6 +181,6 @@ export function CalendarView({ tasks, getSubtasks, selectedTaskId, onOpenTask }:
           </div>
         </div>
       )}
-    </section>
+    </div>
   )
 }
