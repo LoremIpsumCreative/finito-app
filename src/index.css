@@ -303,15 +303,18 @@ body {
   color: var(--text-primary);
 }
 
-/* Headings use the system stack (Asana has no mono headings) */
-h1,
-h2,
-h3,
-h4,
-h5,
-h6 {
-  font-family: var(--font-heading);
-  font-weight: var(--weight-semibold);
+/* Headings use the system stack (Asana has no mono headings). In @layer base
+   so Tailwind weight utilities (e.g. font-medium) can override per element. */
+@layer base {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: var(--font-heading);
+    font-weight: var(--weight-semibold);
+  }
 }
 
 /* In a layer so Tailwind text and font utilities win on form controls.
