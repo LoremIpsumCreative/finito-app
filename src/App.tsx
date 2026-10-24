@@ -29,6 +29,8 @@ function App() {
   const [tasks, setTasks] = useState<Task[]>([])
   // Bumped each time a task transitions to done, to fire the completion celebration.
   const [celebrate, setCelebrate] = useState(0)
+  // Cosmetic star toggle in the project header (Asana parity).
+  const [projectStarred, setProjectStarred] = useState(false)
   const [sections, setSections] = useState<Section[]>([])
   const [dependencies, setDependencies] = useState<TaskDependency[]>([])
   const [comments, setComments] = useState<TaskComment[]>([])
@@ -1571,10 +1573,53 @@ function App() {
         />
 
         <div className="flex min-h-0 flex-1 flex-col bg-[var(--background-paper)]">
-          <div className="flex shrink-0 items-center justify-between gap-3 border-b border-[var(--outline)] px-4 py-2.5">
-            <div className="flex min-w-0 items-baseline gap-3">
+          <div className="flex shrink-0 items-center justify-between gap-3 border-b border-[var(--outline)] px-4 py-2">
+            <div className="flex min-w-0 items-center gap-2">
+              <span
+                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-[var(--radius-md)] text-[13px] font-semibold text-[var(--primary-contrast)]"
+                style={{ background: 'var(--primary-main)' }}
+                aria-hidden="true"
+              >
+                {currentWorkspaceName.slice(0, 1).toUpperCase()}
+              </span>
               <h1 className="truncate text-[20px] font-medium text-[var(--text-primary)]">{currentWorkspaceName}</h1>
-              <span className="shrink-0 text-[13px] text-[var(--text-muted)]">{stats.visible} tasks</span>
+              <button
+                type="button"
+                onClick={() => setProjectStarred((value) => !value)}
+                aria-label={projectStarred ? 'Unstar' : 'Star'}
+                className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-[var(--radius-sm)] transition-colors hover:bg-[var(--background-hover)] ${
+                  projectStarred ? 'text-[var(--warning-main)]' : 'text-[var(--text-muted)]'
+                }`}
+              >
+                <svg viewBox="0 0 24 24" fill={projectStarred ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
+                  <path d="M12 17.75l-6.172 3.245l1.179 -6.873l-5 -4.867l6.9 -1l3.086 -6.253l3.086 6.253l6.9 1l-5 4.867l1.179 6.873z" />
+                </svg>
+              </button>
+              <span className="ml-1 shrink-0 text-[13px] text-[var(--text-muted)]">{stats.visible} tasks</span>
+            </div>
+
+            <div className="flex shrink-0 items-center gap-2">
+              <span
+                className="flex h-7 w-7 items-center justify-center rounded-full bg-[var(--primary-main)] text-[11px] font-semibold text-[var(--primary-contrast)]"
+                title={session.user.email ?? ''}
+                aria-hidden="true"
+              >
+                {(session.user.email ?? '?').slice(0, 2).toUpperCase()}
+              </span>
+              <button
+                type="button"
+                className="flex h-8 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--primary-main)] px-3 text-[13px] font-medium text-[var(--primary-contrast)] transition-colors hover:bg-[var(--primary-dark)]"
+              >
+                <Icon name="profile" className="h-4 w-4" />
+                Share
+              </button>
+              <button
+                type="button"
+                className="flex h-8 items-center gap-1.5 rounded-[var(--radius-md)] border border-[var(--outline)] px-3 text-[13px] font-medium text-[var(--text-secondary)] transition-colors hover:bg-[var(--background-hover)]"
+              >
+                <Icon name="settings" className="h-4 w-4" />
+                Customize
+              </button>
             </div>
           </div>
 

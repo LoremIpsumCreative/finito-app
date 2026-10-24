@@ -276,11 +276,13 @@ export function TaskList({
   const [openHeaderMenu, setOpenHeaderMenu] = useState<string | null>(null)
   const [columnsMenuOpen, setColumnsMenuOpen] = useState(false)
   const [hiddenColumns, setHiddenColumns] = useState<Record<string, boolean>>(() => {
+    // Asana's list is sparse by default; hide the denser columns until asked for.
+    const defaults: Record<string, boolean> = { scope: true, section: true, start: true, subtasks: true }
     try {
       const stored = localStorage.getItem('finito-hidden-columns')
-      return stored ? (JSON.parse(stored) as Record<string, boolean>) : {}
+      return stored ? (JSON.parse(stored) as Record<string, boolean>) : defaults
     } catch {
-      return {}
+      return defaults
     }
   })
   const [tableSort, setTableSort] = useState<TableSort | null>(null)
@@ -880,7 +882,7 @@ export function TaskList({
                               disabled={updatingStatusTaskId === task.id}
                               onClick={(event) => event.stopPropagation()}
                               onChange={(event) => updateTaskStatus(task.id, event.target.value)}
-                              className={`h-7 max-w-[140px] cursor-pointer rounded-[var(--radius-full)] border px-2.5 text-center text-[13px] font-medium outline-none ${statusToneClass(task.status)}`}
+                              className={`h-7 max-w-[140px] cursor-pointer rounded-[var(--radius-full)] px-2.5 text-center text-[13px] font-medium outline-none ${statusToneClass(task.status)}`}
                             >
                               <StatusOptions />
                             </select>
@@ -894,7 +896,7 @@ export function TaskList({
                               disabled={updatingPriorityTaskId === task.id}
                               onClick={(event) => event.stopPropagation()}
                               onChange={(event) => updateTaskPriority(task.id, event.target.value)}
-                              className={`h-7 max-w-[130px] cursor-pointer rounded-[var(--radius-full)] border px-2.5 text-center text-[13px] font-medium outline-none ${priorityToneClass(task.priority)}`}
+                              className={`h-7 max-w-[130px] cursor-pointer rounded-[var(--radius-full)] px-2.5 text-center text-[13px] font-medium outline-none ${priorityToneClass(task.priority)}`}
                             >
                               <option value="">No priority</option>
                               {priorityOptions.map((priority) => (

@@ -7,18 +7,18 @@ import type { IconName } from './icons'
 /** Shared status pill colours so every view (table, card, timeline, calendar) matches (Law of Similarity). */
 export function statusToneClass(status: string) {
   if (status === 'done') {
-    return 'border-[var(--success-main)]/25 bg-[var(--success-light)] text-[var(--success-dark)]'
+    return 'bg-[var(--success-light)] text-[var(--success-dark)]'
   }
   if (status === 'blocked' || status.startsWith('stalled')) {
-    return 'border-[var(--error-main)]/25 bg-[var(--error-light)] text-[var(--error-dark)]'
+    return 'bg-[var(--error-light)] text-[var(--error-dark)]'
   }
   if (status === 'awaiting_response' || status === 'approval_requested') {
-    return 'border-[var(--warning-main)]/25 bg-[var(--warning-light)] text-[var(--warning-dark)]'
+    return 'bg-[var(--warning-light)] text-[var(--warning-dark)]'
   }
   if (status === 'in_progress' || status === 'planning') {
-    return 'border-[var(--info-main)]/25 bg-[var(--info-light)] text-[var(--info-dark)]'
+    return 'bg-[var(--info-light)] text-[var(--info-dark)]'
   }
-  return 'border-[var(--outline)] bg-[var(--surface-muted)] text-[var(--text-secondary)]'
+  return 'bg-[var(--surface-subtle)] text-[var(--text-muted)]'
 }
 
 /** Shared priority pill colours, per the design-system data-display card:
@@ -26,18 +26,18 @@ export function statusToneClass(status: string) {
  *  high = error, medium = warning, low = success, else neutral. */
 export function priorityToneClass(priority: string | null | undefined) {
   if (priority === 'critical' || priority === 'overdue') {
-    return 'border-[var(--text-primary)] bg-[var(--surface-subtle)] text-[var(--text-primary)]'
+    return 'bg-[var(--surface-subtle)] text-[var(--text-primary)]'
   }
   if (priority === 'high') {
-    return 'border-[var(--error-main)]/25 bg-[var(--error-light)] text-[var(--error-dark)]'
+    return 'bg-[var(--error-light)] text-[var(--error-dark)]'
   }
   if (priority === 'medium') {
-    return 'border-[var(--warning-main)]/25 bg-[var(--warning-light)] text-[var(--warning-dark)]'
+    return 'bg-[var(--warning-light)] text-[var(--warning-dark)]'
   }
   if (priority === 'low') {
-    return 'border-[var(--success-main)]/25 bg-[var(--success-light)] text-[var(--success-dark)]'
+    return 'bg-[var(--success-light)] text-[var(--success-dark)]'
   }
-  return 'border-[var(--outline)] bg-[var(--surface-muted)] text-[var(--text-secondary)]'
+  return 'bg-[var(--surface-subtle)] text-[var(--text-muted)]'
 }
 
 /** Matching solid dot colour for compact spots where a full pill won't fit. */
